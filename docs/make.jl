@@ -1,3 +1,3 @@
 using Documenter, GPDiffEq
 
-makedocs(sitename="GPDiffEq Documentation")
+makedocs(sitename="GPDiffEq.jl")
