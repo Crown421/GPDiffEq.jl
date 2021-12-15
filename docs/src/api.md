@@ -1,4 +1,4 @@
-# GPDiffEq API
+# API
 
 ```@autodocs
 Modules = [GPDiffEq]
