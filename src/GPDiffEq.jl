@@ -6,7 +6,7 @@ using InducingPoints
 using ApproximateGPs
 using GalacticOptim
 using Zygote
-using ProgressMeter
+using DiffEqBase
 
 include("utils.jl")
 include("gp_de.jl")

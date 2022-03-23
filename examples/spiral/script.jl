@@ -3,7 +3,7 @@
 
 # ## Setup
 
-# Load some packages
+# Load necessary packages
 using ApproximateGPs
 using Plots
 using LinearAlgebra
@@ -94,3 +94,42 @@ du = trueODEfunc.(eachcol(ode_data), 0, 0)
 du = du ./ maximum(norm.(du))
 quiver(ode_data[1, :], ode_data[2, :]; quiver=(getindex.(du, 1), getindex.(du, 2)))
 quiver!(ode_data[1, :], ode_data[2, :]; quiver=(du_pred_mean[:, 1], du_pred_mean[:, 2]))
+
+# This leaves us with `u` and `udot` pairs as in the input and output:
+u = ColVecs(ode_data)
+udot = ColVecs(du_pred_mean')
+
+# ## Building a model
+# Now we build a model for the the ODE. 
+
+scaker = with_lengthscale(SqExponentialKernel(), ones(2))
+moker = IndependentMOKernel(scaker)
+
+u_mo = MOInput(u, 2)
+σ_n = 1e-6
+y = reduce(vcat, udot.X)
+nothing #hide
+
+# and build a posterior GP
+gpmodel = GP(moker)
+fin_gpmodel = gpmodel(u_mo, σ_n)
+post_gpmodel = posterior(fin_gpmodel, y)
+
+# and optimize
+loss, buildgppost = gp_negloglikelihood(fin_gpmodel, u_mo, y)
+
+p0 = log.(ones(2))
+unfl(x) = exp.(x)
+optp = gp_train(loss ∘ unfl, p0)
+optparams = unfl(optp)
+
+# We build a posterior GP with the optimized parameters,
+optpost = buildgppost(optparams)
+nothing #hide
+
+# and incorporate into a GP ode model. Unfortunately, this does not currently match the previous implementation. 
+
+gpode = GPODE(optpost, tspan)
+gpsol = gpode(u0)
+
+plot(gpsol)
