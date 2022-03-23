@@ -75,5 +75,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/Crown421/GPDiffEq.jl.git", devbranch="main", push_preview=true
+    devbranch="main", repo="github.com/Crown421/GPDiffEq.jl.git", push_preview=true
 )
