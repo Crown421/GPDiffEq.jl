@@ -1,5 +1,3 @@
-export gp_train
-
 """
 `gp_train`
 ### Unconstrained Optimization

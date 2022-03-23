@@ -1,5 +1,3 @@
-export GPODE
-
 abstract type AbstractGPDE <: Function end
 basic_tgrad(u, p, t) = zero(u)
 # Flux.trainable

@@ -1,12 +1,16 @@
 module GPDiffEq
 
-using KernelFunctions
-using Flux
-using InducingPoints
 using ApproximateGPs
-using GalacticOptim
-using Zygote
 using DiffEqBase
+using Flux
+using GalacticOptim
+using InducingPoints
+using KernelFunctions
+using Zygote
+
+export build_deriv_model
+export GPODE
+export gp_train
 
 include("utils.jl")
 include("gp_de.jl")

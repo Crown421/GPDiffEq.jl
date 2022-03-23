@@ -1,5 +1,3 @@
-export build_deriv_model
-
 # ToDo: nicer implementation
 struct FirstCompDerivKernel{K} <: Kernel
     onegrad::Function
