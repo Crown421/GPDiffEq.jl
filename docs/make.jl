@@ -74,6 +74,4 @@ makedocs(;
     # ],
 )
 
-# deploydocs(;
-#     repo="github.com/JuliaGaussianProcesses/KernelFunctions.jl.git", push_preview=true
-# )
+deploydocs(; repo="github.com/Crown421/GPDiffEq.jl.git", push_preview=true)
