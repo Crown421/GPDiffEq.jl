@@ -471,7 +471,7 @@ version = "3.3.6+0"
 
 [[deps.GPDiffEq]]
 deps = ["ApproximateGPs", "DiffEqBase", "Flux", "GalacticOptim", "InducingPoints", "KernelFunctions", "ProgressMeter", "Zygote"]
-path = "/home/steffen/OneDrive/Code/Packages/GPDiffEq/docs/.."
+path = "../.."
 uuid = "4de859cf-bf9a-4c94-a796-5dda04c77145"
 version = "0.1.0"
 
