@@ -1,6 +1,18 @@
 export gp_negloglikelihood
 
-# ToDo: type annotation?AbstractGP
+"""
+    Returns two function function. 1) to compute the loglikelihood and 2) rebuild the GP from a new set of parameters. 
+
+```julia
+    gp_negloglikelihood(gp, x, y)
+```
+
+Arguments:
+
+- `gp`: An AbstractGP.FiniteGP
+- `x`: input data
+- `y`: output data
+"""
 function gp_negloglikelihood(gp, x, y)
     return _gp_negloglikelihood(gp, x, y)
 end
