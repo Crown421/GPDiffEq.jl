@@ -1,5 +1,6 @@
 # GPDiffEq
 
+[![julia 1.7](https://github.com/Crown421/GPDiffEq.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/Crown421/GPDiffEq.jl/actions/workflows/ci.yml) 
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://crown421.github.io/GPDiffEq.jl/dev/)
 
 
