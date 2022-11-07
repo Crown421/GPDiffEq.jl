@@ -16,5 +16,6 @@ include("utils.jl")
 include("gp_de.jl")
 include("train.jl")
 include("derivkernels.jl")
+include("derivgp.jl")
 
 end # module
