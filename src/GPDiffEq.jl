@@ -1,6 +1,8 @@
 module GPDiffEq
 
-using ApproximateGPs
+using Reexport
+
+@reexport using ApproximateGPs
 using DiffEqBase
 using Flux
 using GalacticOptim
