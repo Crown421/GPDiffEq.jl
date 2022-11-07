@@ -7,7 +7,7 @@ struct DerivativeKernel{Tf,Tk<:Kernel} <: AbstractDerivativeKernel
     d10::Tf
     d11::Tf
 
-    function FirstCompDerivKernel(kernel)
+    function DerivativeKernel(kernel)
         d01(t1, t2) = first(first(Zygote.gradient(t1 -> kernel(t1, t2), t1)))
         d10(t1, t2) = first(first(Zygote.gradient(t2 -> kernel(t1, t2), t2)))
         d11(t1, t2) = first(Zygote.hessian(t -> ker(t[1], t[2]), [t1, t2])[2])
