@@ -14,7 +14,7 @@
         @test mean(f, x) == AbstractGPs._map_meanfunction(m, x)
         dk = GPDiffEq.BothComponentDerivativeKernel(k)
         @test cov(f, x) == kernelmatrix(dk, x)
-        TestUtils.test_internal_abstractgps_interface(rng, f, x, x′)
+        AbstractGPs.TestUtils.test_internal_abstractgps_interface(rng, f, x, x′)
     end
 
     # # Check that mean-function specialisations work as expected.
