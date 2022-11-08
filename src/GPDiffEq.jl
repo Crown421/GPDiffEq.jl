@@ -7,6 +7,7 @@ using DiffEqBase
 using Flux
 using GalacticOptim
 using InducingPoints
+using Statistics
 using KernelFunctions
 using Zygote
 
