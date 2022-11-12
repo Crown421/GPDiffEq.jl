@@ -8,6 +8,7 @@ using Flux
 using GalacticOptim
 using InducingPoints
 using Statistics
+using StatsBase
 using LinearAlgebra
 using KernelFunctions
 using Zygote

@@ -11,3 +11,4 @@ using Random
 
 include("derivativeGPs/derivkernels.jl")
 include("derivativeGPs/derivgp.jl")
+include("derivativeGPs/derivposterior.jl")
