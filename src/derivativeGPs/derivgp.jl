@@ -17,6 +17,12 @@ struct DerivativeGP{Tf,Tm<:AbstractGPs.MeanFunction,Tdkc<:DerivativeKernelCollec
         dkerc = DerivativeKernelCollection(kernel)
         return new{typeof(f),typeof(dmean),typeof(dkerc)}(f, dmean, dkerc)
     end
+
+    function DerivativeGP(f::AbstractGPs.GP)
+        dmean = _deriv_meanfunction(f.mean)
+        dkerc = DerivativeKernelCollection(f.kernel)
+        return new{typeof(f),typeof(dmean),typeof(dkerc)}(f, dmean, dkerc)
+    end
 end
 
 function DerivativeGP(kernel::Kernel)

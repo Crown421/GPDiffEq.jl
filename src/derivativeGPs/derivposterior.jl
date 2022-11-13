@@ -1,10 +1,15 @@
 # import ApproximateGPs: posterior
+export differentiate
 
-# need to construct C with base, undifferentiated GP
+"""
+    posterior(FiniteGP{<:DerivativeGP}, y::AbstractVector{<:Real})
+The posterior of a derivative GP, conditioned on the data `y` from the output space of the undifferentiated GP. Evaluating this posterior at a point `x` will return the posterior of the derivative at `x`, and therefore not return the original data `y`.
+"""
 function AbstractGPs.posterior(
     dfx::AbstractGPs.FiniteGP{<:DerivativeGP}, y::AbstractVector{<:Real}
 )
-    # do need a method here for finite GPs, that computes the right mean_and_cov of this specific case
+    # need to construct C with base, undifferentiated GP
+    # could add a method here for finite GPs, that computes the right mean_and_cov of this specific case
     m = mean(dfx.f.f, dfx.x)
     C_mat = cov(dfx.f.f, dfx.x) + dfx.Σy
     C = cholesky(AbstractGPs._symmetric(C_mat))
@@ -76,4 +81,14 @@ function StatsBase.mean_and_var(
     m_post = mean(f.prior, x) + C_xcond_x' * f.data.α
     C_post_diag = var(f.prior, x) - AbstractGPs.diag_Xt_invA_X(f.data.C, C_xcond_x)
     return (m_post, C_post_diag)
+end
+
+## Conversion methods
+# ToDo: need tests
+"""
+    differentiate(gpp::PosteriorGP)
+"""
+function differentiate(gpp::AbstractGPs.PosteriorGP)
+    dgp = DerivativeGP(gpp.prior)
+    return AbstractGPs.PosteriorGP(dgp, gpp.data)
 end
