@@ -52,84 +52,84 @@ g = GP(moker)
 gt = g(x, σ_n)
 nothing #hide
 
-# Now we use the following convenience functions to a loglikelihood loss function and a function to rebuild the gp with the optimal parameters. 
-# Note that we use optimize over the logarithm of the parameters, to ensure their positivity. For more details see [this KernelFunctions.jl example](https://juliagaussianprocesses.github.io/KernelFunctions.jl/dev/examples/train-kernel-parameters/)
-loss, buildgppost = gp_negloglikelihood(gt, x, y)
+# # Now we use the following convenience functions to a loglikelihood loss function and a function to rebuild the gp with the optimal parameters. 
+# # Note that we use optimize over the logarithm of the parameters, to ensure their positivity. For more details see [this KernelFunctions.jl example](https://juliagaussianprocesses.github.io/KernelFunctions.jl/dev/examples/train-kernel-parameters/)
+# loss, buildgppost = gp_negloglikelihood(gt, x, y)
 
-p0 = log.([1.0])
-unfl(x) = exp.(x)
-optp = gp_train(loss ∘ unfl, p0; show_trace=true, show_every=15)
-optparams = unfl(optp)
+# p0 = log.([1.0])
+# unfl(x) = exp.(x)
+# optp = gp_train(loss ∘ unfl, p0; show_trace=true, show_every=15)
+# optparams = unfl(optp)
 
-# Now we can build a FiniteGP with the optimized parameters,
-optpost = buildgppost(optparams)
-nothing #hide
+# # Now we can build a FiniteGP with the optimized parameters,
+# optpost = buildgppost(optparams)
+# nothing #hide
 
-# which fits pretty well
-t_plot = range(datatspan...; length=100)
-plot(sol(t_plot); label=["ode" ""], color=[:skyblue :navy], linewidth=2.5)
-t_plot_mo = MOInput(t_plot, 2)
-pred_mean = mean(optpost, t_plot_mo)
-pred_mean = reshape(pred_mean, :, 2)
-## pred_cov = diag(cov(optpost, t_plot_mo))
-## pred_cov = reshape(pred_cov, :, 2)
-## plot!(t_plot, pred_mean; ribbons = pred_cov)
-plot!(
-    t_plot,
-    pred_mean;
-    label=["gp" ""],
-    color=[:tomato :firebrick],
-    linewidth=3.5,
-    linestyle=:dash,
-)
+# # which fits pretty well
+# t_plot = range(datatspan...; length=100)
+# plot(sol(t_plot); label=["ode" ""], color=[:skyblue :navy], linewidth=2.5)
+# t_plot_mo = MOInput(t_plot, 2)
+# pred_mean = mean(optpost, t_plot_mo)
+# pred_mean = reshape(pred_mean, :, 2)
+# ## pred_cov = diag(cov(optpost, t_plot_mo))
+# ## pred_cov = reshape(pred_cov, :, 2)
+# ## plot!(t_plot, pred_mean; ribbons = pred_cov)
+# plot!(
+#     t_plot,
+#     pred_mean;
+#     label=["gp" ""],
+#     color=[:tomato :firebrick],
+#     linewidth=3.5,
+#     linestyle=:dash,
+# )
 
-# GPs are closed under linear operators, which means that we can very easily obtain derivative information:
+# # GPs are closed under linear operators, which means that we can very easily obtain derivative information:
 
-deriv_post = build_deriv_model(optpost)
-du_pred_mean = mean(deriv_post, x)
-du_pred_mean = reshape(du_pred_mean, :, 2)
-du_pred_mean = du_pred_mean ./ norm.(eachrow(du_pred_mean))
+# deriv_post = build_deriv_model(optpost)
+# du_pred_mean = mean(deriv_post, x)
+# du_pred_mean = reshape(du_pred_mean, :, 2)
+# du_pred_mean = du_pred_mean ./ norm.(eachrow(du_pred_mean))
 
-du = trueODEfunc.(eachcol(ode_data), 0, 0)
-du = du ./ maximum(norm.(du))
-quiver(ode_data[1, :], ode_data[2, :]; quiver=(getindex.(du, 1), getindex.(du, 2)))
-quiver!(ode_data[1, :], ode_data[2, :]; quiver=(du_pred_mean[:, 1], du_pred_mean[:, 2]))
+# du = trueODEfunc.(eachcol(ode_data), 0, 0)
+# du = du ./ maximum(norm.(du))
+# quiver(ode_data[1, :], ode_data[2, :]; quiver=(getindex.(du, 1), getindex.(du, 2)))
+# quiver!(ode_data[1, :], ode_data[2, :]; quiver=(du_pred_mean[:, 1], du_pred_mean[:, 2]))
 
-# This leaves us with `u` and `udot` pairs as in the input and output:
-u = ColVecs(ode_data)
-udot = ColVecs(du_pred_mean')
+# # This leaves us with `u` and `udot` pairs as in the input and output:
+# u = ColVecs(ode_data)
+# udot = ColVecs(du_pred_mean')
 
-# ## Building a model
-# Now we build a model for the the ODE. 
+# # ## Building a model
+# # Now we build a model for the the ODE. 
 
-scaker = with_lengthscale(SqExponentialKernel(), ones(2))
-moker = IndependentMOKernel(scaker)
+# scaker = with_lengthscale(SqExponentialKernel(), ones(2))
+# moker = IndependentMOKernel(scaker)
 
-u_mo = MOInput(u, 2)
-σ_n = 1e-6
-y = reduce(vcat, udot.X)
-nothing #hide
+# u_mo = MOInput(u, 2)
+# σ_n = 1e-6
+# y = reduce(vcat, udot.X)
+# nothing #hide
 
-# and build a posterior GP
-gpmodel = GP(moker)
-fin_gpmodel = gpmodel(u_mo, σ_n)
-post_gpmodel = posterior(fin_gpmodel, y)
+# # and build a posterior GP
+# gpmodel = GP(moker)
+# fin_gpmodel = gpmodel(u_mo, σ_n)
+# post_gpmodel = posterior(fin_gpmodel, y)
 
-# and optimize
-loss, buildgppost = gp_negloglikelihood(fin_gpmodel, u_mo, y)
+# # and optimize
+# loss, buildgppost = gp_negloglikelihood(fin_gpmodel, u_mo, y)
 
-p0 = log.(ones(2))
-unfl(x) = exp.(x)
-optp = gp_train(loss ∘ unfl, p0)
-optparams = unfl(optp)
+# p0 = log.(ones(2))
+# unfl(x) = exp.(x)
+# optp = gp_train(loss ∘ unfl, p0)
+# optparams = unfl(optp)
 
-# We build a posterior GP with the optimized parameters,
-optpost = buildgppost(optparams)
-nothing #hide
+# # We build a posterior GP with the optimized parameters,
+# optpost = buildgppost(optparams)
+# nothing #hide
 
-# and incorporate into a GP ode model. Unfortunately, this does not currently match the previous implementation. 
+# # and incorporate into a GP ode model. Unfortunately, this does not currently match the previous implementation. 
 
-gpode = GPODE(optpost, tspan)
-gpsol = gpode(u0)
+# gpode = GPODE(optpost, tspan)
+# gpsol = gpode(u0)
 
-plot(gpsol)
+# plot(gpsol)
