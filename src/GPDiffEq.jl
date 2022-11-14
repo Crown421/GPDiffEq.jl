@@ -5,7 +5,8 @@ using Reexport
 @reexport using ApproximateGPs
 using DiffEqBase
 using Flux
-using GalacticOptim
+using Optimization
+using OptimizationOptimJL
 using InducingPoints
 using Statistics
 using StatsBase
