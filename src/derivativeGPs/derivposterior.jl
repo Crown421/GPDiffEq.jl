@@ -43,43 +43,44 @@ end
 ### AbstractGP interface implementation.
 # PosteriorGP not exported seems odd. Probably should import explicitly.
 function Statistics.mean(f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector)
-    return mean(f.prior, x) + f.prior.dkernel.d10.(x, f.data.x') * f.data.α
+    return mean(f.prior, x) + kernelmatrix(f.prior.dkernel.d10, x, f.data.x) * f.data.α
 end
 
 function Statistics.cov(f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector)
     #ToDo: Need test for correctness
-    return cov(f.prior, x) -
-           AbstractGPs.Xt_invA_X(f.data.C, f.prior.dkernel.d10.(x', f.data.x))
+    tmp = kernelmatrix(f.prior.dkernel.d01, f.data.x, x)
+    return cov(f.prior, x) - AbstractGPs.Xt_invA_X(f.data.C, tmp)
 end
 
 function Statistics.var(f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector)
-    return var(f.prior, x) -
-           AbstractGPs.diag_Xt_invA_X(f.data.C, f.prior.dkernel.d10.(x', f.data.x))
+    tmp = kernelmatrix(f.prior.dkernel.d01, f.data.x, x)
+    return var(f.prior, x) - AbstractGPs.diag_Xt_invA_X(f.data.C, tmp)
 end
 
 function Statistics.cov(
     f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector, z::AbstractVector
 )
-    C_xcond_x = f.prior.dkernel.d10.(x', f.data.x)
-    C_xcond_y = f.prior.dkernel.d01.(f.data.x, z')
+    C_xcond_x = kernelmatrix(f.prior.dkernel.d01, f.data.x, x)
+    C_xcond_y = kernelmatrix(f.prior.dkernel.d01, f.data.x, z)
     return cov(f.prior, x, z) - AbstractGPs.Xt_invA_Y(C_xcond_x, f.data.C, C_xcond_y)
 end
 
 function StatsBase.mean_and_cov(
     f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector
 )
-    C_xcond_x = f.prior.dkernel.d10.(x', f.data.x)
-    m_post = mean(f.prior, x) + C_xcond_x' * f.data.α
-    C_post = cov(f.prior, x) - AbstractGPs.Xt_invA_X(f.data.C, C_xcond_x)
+    C_xcond_x = kernelmatrix(f.prior.dkernel.d10, x, f.data.x)
+    m_post = mean(f.prior, x) + C_xcond_x * f.data.α
+    C_post = cov(f.prior, x) - AbstractGPs.Xt_invA_X(f.data.C, permutedims(C_xcond_x))
     return (m_post, C_post)
 end
 
 function StatsBase.mean_and_var(
     f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector
 )
-    C_xcond_x = f.prior.dkernel.d10.(x', f.data.x)
-    m_post = mean(f.prior, x) + C_xcond_x' * f.data.α
-    C_post_diag = var(f.prior, x) - AbstractGPs.diag_Xt_invA_X(f.data.C, C_xcond_x)
+    C_xcond_x = kernelmatrix(f.prior.dkernel.d10, x, f.data.x)
+    m_post = mean(f.prior, x) + C_xcond_x * f.data.α
+    C_post_diag =
+        var(f.prior, x) - AbstractGPs.diag_Xt_invA_X(f.data.C, permutedims(C_xcond_x))
     return (m_post, C_post_diag)
 end
 
