@@ -15,7 +15,7 @@ using Optimization, OptimizationOptimJL
 # First we define an ODE and generate some data points from it. 
 
 u0 = [2.0; 0.0]
-datasize = 20
+datasize = 10
 tspan = (0.0, 3.0)
 datatspan = (0.0, 1.5)
 datatsteps = range(datatspan[1], datatspan[2]; length=datasize)
@@ -110,12 +110,17 @@ plot!(
 deriv_post = differentiate(optpost)
 du_pred_mean = mean(deriv_post, x)
 du_pred_mean = reshape(du_pred_mean, :, 2)
-du_pred_mean = du_pred_mean ./ norm.(eachrow(du_pred_mean))
 
 du = trueODEfunc.(eachcol(ode_data), 0, 0)
-du = du ./ maximum(norm.(du))
-quiver(ode_data[1, :], ode_data[2, :]; quiver=(getindex.(du, 1), getindex.(du, 2)))
-quiver!(ode_data[1, :], ode_data[2, :]; quiver=(du_pred_mean[:, 1], du_pred_mean[:, 2]))
+sf = maximum(norm.(du))
+quiver(
+    ode_data[1, :], ode_data[2, :]; quiver=(getindex.(du, 1) / sf, getindex.(du, 2) / sf)
+)
+quiver!(
+    ode_data[1, :],
+    ode_data[2, :];
+    quiver=(du_pred_mean[:, 1] / sf, du_pred_mean[:, 2] / sf),
+)
 
 # This leaves us with `u` and `udot` pairs as in the input and output:
 u = ColVecs(ode_data)
