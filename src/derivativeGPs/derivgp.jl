@@ -30,7 +30,6 @@ function DerivativeGP(kernel::Kernel)
 end
 
 ## printing
-# ToDo: printing tests
 function Base.show(io::IO, ::MIME"text/plain", m::DerivativeGP)
     return print(
         io, "Derivative of GP f: \n", "  mean: ", m.f.mean, "\n", "  kernel: ", m.f.kernel
@@ -49,8 +48,8 @@ function _deriv_meanfunction(
 end
 
 function _deriv_meanfunction(mean::AbstractGPs.CustomMean) where {T}
-    # check for >1D
-    df(x) = Zygote.gradient(x -> mean(x), x)
+    # ToDo check for >1D
+    df(x) = first(Zygote.gradient(x -> mean.f(x), x))
     return AbstractGPs.CustomMean(df)
 end
 
