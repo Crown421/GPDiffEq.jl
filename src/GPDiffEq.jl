@@ -25,4 +25,8 @@ include("derivativeGPs/derivkernels.jl")
 include("derivativeGPs/derivgp.jl")
 include("derivativeGPs/derivposterior.jl")
 
+include("solver/PullSolversModule.jl")
+
+@reexport using .PullSoversModule
+
 end # module
