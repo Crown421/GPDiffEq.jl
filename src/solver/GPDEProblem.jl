@@ -1,8 +1,10 @@
 
 import SciMLBase: promote_tspan
 
+export GPODEProblem
+
 # later <: SciMLBase.AbstractDEProblem?
-abstract type AbstractGPDEProblem{uType,tType,isinplace} end
+abstract type AbstractGPODEProblem{uType,tType,isinplace} end
 
 """
 Defines a Gaussian Process differential equation problem.
@@ -19,8 +21,8 @@ ToDo: More details on GP interface and options (Regular, sparse, ...)
 ## Fields
 
 """
-struct GPDEProblem{uType,tType,isinplace,GPFun,K} <:
-       AbstractGPDEProblem{uType,tType,isinplace}
+struct GPODEProblem{uType,tType,isinplace,GPFun,K} <:
+       AbstractGPODEProblem{uType,tType,isinplace}
     f::GPFun
     u0::uType
     tspan::tType
@@ -29,13 +31,24 @@ struct GPDEProblem{uType,tType,isinplace,GPFun,K} <:
 
     # @kw_only
     # https://github.com/SciML/SciMLBase.jl/blob/master/src/problems/sde_problems.jl
-    function GPDEProblem{iip}(gp::AbstractGPFunction, u0, tspan; kwargs...) where {iip}
+    function GPODEProblem{iip}(gp::AbstractGPODEFunction, u0, tspan; kwargs...) where {iip}
         _tspan = promote_tspan(tspan)
-        return new{typeof(u0),typeof(_tspan),isinplace(gp),typeof(f),typeof(kwargs)}(
-            gp, u0, _tspan, p, kwargs
+        return new{typeof(u0),typeof(_tspan),isinplace(gp),typeof(gp),typeof(kwargs)}(
+            gp, u0, _tspan, kwargs
         )
     end
-    function GPDEProblem{iip}(gp, u0, tspan; kwargs...) where {iip}
-        return GPDEProblem(GPFunction{iip}(gp), u0, tspan; kwargs...)
-    end
+    # function GPODEProblem{iip}(gp, u0, tspan; kwargs...) where {iip}
+    #     return GPODEProblem(GPFunction{iip}(gp), u0, tspan; kwargs...)
+    # end
 end
+
+"""
+    ODEProblem(f::ODEFunction,u0,tspan,p=NullParameters(),callback=CallbackSet())
+Define an ODE problem from an [`ODEFunction`](@ref).
+"""
+function GPODEProblem(f::AbstractGPODEFunction, u0, tspan, args...; kwargs...)
+    # ToDo: default false for now
+    return GPODEProblem{false}(f, u0, tspan, args...; kwargs...)
+end
+
+# ToDo: printing?

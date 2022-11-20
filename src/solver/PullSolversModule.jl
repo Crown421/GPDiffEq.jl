@@ -1,5 +1,8 @@
 module PullSoversModule
 
+using DocStringExtensions
+
+using AbstractGPs
 using OrdinaryDiffEq
 import OrdinaryDiffEq:
     OrdinaryDiffEqAlgorithm,

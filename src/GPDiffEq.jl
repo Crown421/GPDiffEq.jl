@@ -1,6 +1,7 @@
 module GPDiffEq
 
 using Reexport
+using DocStringExtensions
 
 @reexport using ApproximateGPs
 using DiffEqBase
@@ -18,15 +19,15 @@ export build_deriv_model
 export GPODE
 export gp_train
 
+include("solver/PullSolversModule.jl")
+
+@reexport using .PullSoversModule
+
 include("utils.jl")
 include("gp_de.jl")
 include("train.jl")
 include("derivativeGPs/derivkernels.jl")
 include("derivativeGPs/derivgp.jl")
 include("derivativeGPs/derivposterior.jl")
-
-include("solver/PullSolversModule.jl")
-
-@reexport using .PullSoversModule
 
 end # module
