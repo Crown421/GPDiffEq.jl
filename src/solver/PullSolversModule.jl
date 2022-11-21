@@ -1,6 +1,8 @@
 module PullSoversModule
 
 using DocStringExtensions
+using Reexport
+@reexport using DiffEqBase
 
 using AbstractGPs
 using OrdinaryDiffEq

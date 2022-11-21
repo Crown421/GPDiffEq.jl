@@ -35,3 +35,6 @@ plot!(p, ts, mean(fp, ts); ribbons=sqrt.(var(fp, ts)), label="GP posterior")
 ff = GPODEFunction(fp)
 
 prob = GPODEProblem(ff, 1.0, (ts[1], ts[end]))
+
+# what I want:
+solve(prob, PULLEuler(); dt=0.1)
