@@ -574,7 +574,7 @@ uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
 version = "3.3.8+0"
 
 [[deps.GPDiffEq]]
-deps = ["AbstractGPs", "ApproximateGPs", "DiffEqBase", "FiniteDiff", "Flux", "InducingPoints", "KernelFunctions", "LinearAlgebra", "Optimization", "OptimizationOptimJL", "Reexport", "Statistics", "StatsBase", "Zygote"]
+deps = ["AbstractGPs", "ApproximateGPs", "DiffEqBase", "DocStringExtensions", "FiniteDiff", "Flux", "InducingPoints", "KernelFunctions", "LinearAlgebra", "Measurements", "Optimization", "OptimizationOptimJL", "OrdinaryDiffEq", "Reexport", "Requires", "SciMLBase", "Statistics", "StatsBase", "Zygote"]
 path = "../.."
 uuid = "4de859cf-bf9a-4c94-a796-5dda04c77145"
 version = "0.1.0"
@@ -1015,6 +1015,12 @@ version = "1.1.7"
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
 version = "2.28.0+0"
+
+[[deps.Measurements]]
+deps = ["Calculus", "LinearAlgebra", "Printf", "RecipesBase", "Requires"]
+git-tree-sha1 = "12950d646ce04fb2e89ba5bd890205882c3592d7"
+uuid = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
+version = "2.8.0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
