@@ -138,12 +138,12 @@ y = reduce(vcat, udot.X)
 nothing #hide
 
 # and build a posterior GP
-gpmodel = GP(moker)
-fin_gpmodel = gpmodel(u_mo, σ_n)
-post_gpmodel = posterior(fin_gpmodel, y)
+gpfun = GP(moker)
+fin_gpfun = gpfun(u_mo, σ_n)
+post_gpfun = posterior(fin_gpfun, y)
 
 # and optimize
-loss, buildgppost = gp_negloglikelihood(fin_gpmodel, u_mo, y)
+loss, buildgppost = gp_negloglikelihood(fin_gpfun, u_mo, y)
 
 p0 = log.(ones(2))
 unfl(x) = exp.(x)
@@ -161,7 +161,10 @@ nothing #hide
 
 # and incorporate into a GP ode model. Unfortunately, this does not currently match the previous implementation. 
 
-gpode = GPODE(optpost, tspan)
-gpsol = gpode(u0)
+gpff = GPODEFunction(optpost)
+
+gpprob = GPODEProblem(gpff, u0, tspan)
+
+gpsol = solve(gpprob, Tsit5())
 
 plot(gpsol)

@@ -28,7 +28,7 @@ function SciMLBase.__solve(prob::AbstractGPODEProblem, alg::PULLEuler; dt, kwarg
     xe = zeros(Measurement{Float64}, nsteps + 1)
     av = zeros(nsteps + 1)
 
-    # ToDo: check lift to u0 ± 0 when only scalar is given
+    # ToDo: check lift to u0 ± 0 when only scalar is given (might already be happening)
     xe[1] = prob.u0 # μ₀ ± sqrt(Σ₀)
 
     for i in 1:nsteps
@@ -41,7 +41,7 @@ end
 
 function linearized_eulerstep!(gp, dgp, x, a, h, n; lhist=150)
     # ToDo: fix / add sugar for abstract vector requirement of mean when only using scalar
-    a[n] = mean(dgp, [x[n].val])[1] # this needs the derivative
+    a[n] = _mean(dgp, x[n].val) # this needs the derivative
 
     m = x[n].val + h * mean(gp, [x[n].val])[1]
 

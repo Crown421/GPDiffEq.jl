@@ -25,3 +25,7 @@ struct GPODEFunction{iip,GP,DGP} <: AbstractGPODEFunction{iip}
         return new{iip,typeof(gp),typeof(dgp)}(gp, dgp)
     end
 end
+
+## ToDo: paramters at some point
+# (gpf::GPODEFunction)(x, p, t) = _mean(gpf.gp, x)
+(gpf::GPODEFunction)(x) = _mean(gpf.gp, x)

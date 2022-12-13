@@ -32,6 +32,7 @@ include("GPDEProblem.jl")
 abstract type AbstractPULLAlg <: AbstractODEAlgorithm end
 
 include("PULLEuler.jl")
+include("utils.jl")
 
 using Requires
 function __init__()
