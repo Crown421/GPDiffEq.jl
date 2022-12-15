@@ -65,7 +65,6 @@ mea = mean(fp, ts)
 st2 = 2 * sqrt.(var(fp, ts))
 lines!(p1, ts, mea)
 band!(p1, ts, mea .- st2, mea .+ st2; color=(:blue, 0.2))
-# ; label="truth", xlabel="x", ylabel="f(x)")
 scatter!(p1, X, y; color=:darkred)
 
 # wiggly lines:
@@ -73,11 +72,8 @@ scatter!(p1, X, y; color=:darkred)
 xt_plot = range(-3.2, 3.2; length=60)
 sample_obs = Observable(samples[1])
 
-# f_itp = create_itp(xt, samples[1])
 f_itp_obs = lift(s -> create_itp(xt, s), sample_obs)
-# fxt = f_itp(xt_plot)
 fs_obs = lift(f -> f(xt_plot), f_itp_obs)
-# Observable(fxt)
 
 # Solution
 x0 = 0.45
@@ -91,20 +87,11 @@ function solveODE(f_itp, x0, tspan, tstep)
     sol = solve(prob, Tsit5(); saveat=tstep)
     return sol.u
 end
-# ff = ODEFunction((u, t, p) -> f_itp(u))
-# prob = ODEProblem(ff, x0, (0.0, 4.0))
-# sol = solve(prob, Tsit5(); saveat=0.1)
 
-# tsol = sol.t
-# xsol = sol.u
-# xsol_obs = Observable(xsol)
 xsol_obs = lift(f -> solveODE(f, x0, tspan, tstep), f_itp_obs)
 
-# dxsol_obs = lift(f_itp, xsol_obs)
 dxsol_obs = lift((f, x) -> f.(x), f_itp_obs, xsol_obs)
-# Observable(f_itp(xsol_obs[]))
 dx0_obs = lift(f -> [f(x0)], f_itp_obs)
-# Observable([f_itp(x0)])
 
 ## Initial animated elements state
 lines!(p1, xt_plot, fs_obs; color=:grey30, linewidth=3.1)
@@ -118,6 +105,7 @@ lines!(p2, tsol, xsol_obs; color=:purple)
 
 # some settings
 ylims!(p2, (-1.9, 1.9))
+
 ## Updates/ Animation
 # updating all observable
 
@@ -127,23 +115,6 @@ for i in 1:(length(samples) - 1)
         sample = samples[i] * (1 - λ) + samples[i + 1] * λ
         sample_obs[] = sample
 
-        # f_itp_sample = create_itp(xt, sample)
-
-        # fxt = f_itp_sample(xt_plot)
-        # fs_obs[] = fxt
-
-        # ff = ODEFunction((u, t, p) -> f_itp_sample(u))
-        # prob = ODEProblem(ff, x0, (0.0, 4.0))
-        # sol = solve(prob, Tsit5(); saveat=0.1)
-
-        # tsol = sol.t
-        # xsol = sol.u
-        # xsol_obs[] = xsol
-
-        # dxsol_obs[] = f_itp_sample(xsol_obs[])
-        # dx0_obs[] = [f_itp_sample(x0)]
-
-        # fs_obs[] = f_sample(xt_plot)
         sleep(0.04)
     end
     println("done $i")
