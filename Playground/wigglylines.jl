@@ -4,10 +4,20 @@ using DifferentialEquations
 using Interpolations
 using GPDiffEq
 
-ts = range(-3.5, 3.5; length=100)
+# key parameters
+baser = [-0.2, 4.0]
+x0 = 3.0
+
+ylim = (1.3, 3.1)
+
+# generate data
+plot_offset = [-0.5, 0.5]
+s_offset = [-0.2, 0.2]
+
+ts = range((baser .+ plot_offset)...; length=100)
 f(x) = x * cos(x)
 
-X = range(-3.0, 3.0; length=7)
+X = range(baser...; length=7)
 σ_n = 0.2
 y = f.(X) .+ σ_n * randn(length(X))
 # ; label="data")
@@ -19,7 +29,7 @@ fx = gp(X, σ_n^2)
 fp = posterior(fx, y)
 
 ## Sampling vector fields
-xt = range(-3.2, 3.2; length=30)
+xt = range((baser .+ s_offset)...; length=30)
 
 # xsample = range(-4.25, 4.252, length = 30)
 
@@ -52,70 +62,124 @@ push!(samples, samples[1])
 
 ### Plotting 
 ## Setup
-fig = Figure(; resolution=(1000, 700))
-display(fig)
 
-p = fig[1, 1] = GridLayout()
-p1 = Axis(p[1, 1]; xlabel="x", ylabel="f(x)")
-p2 = Axis(p[2, 1]; xlabel="t", ylabel="x")
+cols = Makie.Colors.distinguishable_colors(
+    4, [Makie.Colors.RGB(1, 1, 1), Makie.Colors.RGB(0, 0, 0)]; dropseed=true
+)
 
-## Initial plot
-lines!(p1, ts, f.(ts); color=:black)
-mea = mean(fp, ts)
-st2 = 2 * sqrt.(var(fp, ts))
-lines!(p1, ts, mea)
-band!(p1, ts, mea .- st2, mea .+ st2; color=(:blue, 0.2))
-scatter!(p1, X, y; color=:darkred)
+begin
+    fig = Figure(; resolution=(1000, 700))
+    display(fig)
 
-# wiggly lines:
-# Model
-xt_plot = range(-3.2, 3.2; length=60)
-sample_obs = Observable(samples[1])
+    p = fig[1, 1] = GridLayout()
+    p1 = Axis(p[1, 1]; xlabel="x", ylabel="f(x)")
+    p2 = Axis(p[2, 1]; xlabel="t", ylabel="x")
 
-f_itp_obs = lift(s -> create_itp(xt, s), sample_obs)
-fs_obs = lift(f -> f(xt_plot), f_itp_obs)
+    ## Initial plot
+    lines!(p1, ts, f.(ts); color=:black, linewidth=2.5, label="true model")
+    mea = mean(fp, ts)
+    st2 = 2 * sqrt.(var(fp, ts))
+    lines!(p1, ts, mea; color=cols[4], label="GP")
+    band!(p1, ts, mea .- st2, mea .+ st2; color=(cols[4], 0.2))
+    # data plotted later for overlay
 
-# Solution
-x0 = 0.45
-tspan = (0.0, 4.0)
-tstep = 0.1
-tsol = range(tspan...; step=tstep)
+    # mean GP Solution
+    # PULL solver!!
+    gpff = GPODEFunction(fp)
 
-function solveODE(f_itp, x0, tspan, tstep)
-    ff = (u, p, t) -> f_itp(u)
-    prob = ODEProblem(ff, x0, tspan)
-    sol = solve(prob, Tsit5(); saveat=tstep)
-    return sol.u
+    gpprob = GPODEProblem(gpff, x0, (0.0, 4.0))
+
+    # and integrate with the PULL Euler solver. 
+    gpsol = solve(gpprob, PULLEuler(); dt=0.1)
+    gpsolmea = getfield.(gpsol.u, :val)
+    gpsolstd = getfield.(gpsol.u, :err)
+
+    lines!(
+        p2, gpsol.t, gpsolmea; color=cols[4], linewidth=2.5, label="trajectory distribution"
+    )
+    band!(
+        p2,
+        gpsol.t,
+        gpsolmea .- 2 .* gpsolstd,
+        gpsolmea .+ 2 .* gpsolstd;
+        color=(cols[4], 0.2),
+    )
+
+    # wiggly lines:
+    # Model
+    xt_plot = range((baser .+ s_offset)...; length=60)
+    sample_obs = Observable(samples[1])
+
+    f_itp_obs = lift(s -> create_itp(xt, s), sample_obs)
+    fs_obs = lift(f -> f(xt_plot), f_itp_obs)
+
+    # Solution
+    tspan = (0.0, 4.0)
+    tstep = 0.1
+    tsol = range(tspan...; step=tstep)
+
+    function solveODE(f_itp, x0, tspan, tstep)
+        ff = (u, p, t) -> f_itp(u)
+        prob = ODEProblem(ff, x0, tspan)
+        sol = solve(prob, Tsit5(); saveat=tstep)
+        return sol.u
+    end
+
+    xsol_obs = lift(f -> solveODE(f, x0, tspan, tstep), f_itp_obs)
+
+    dxsol_obs = lift((f, x) -> f.(x), f_itp_obs, xsol_obs)
+    dx0_obs = lift(f -> [f(x0)], f_itp_obs)
+
+    ## Initial animated elements state
+    lines!(p1, xt_plot, fs_obs; color=:grey30, linewidth=3.1, label="sampled model")
+
+    # plot data here
+    scatter!(p1, X, y; color=cols[1], label="data", markersize=13)
+
+    # line on model
+    ## not sure I want them
+    # lines!(p1, xsol_obs, dxsol_obs; color=:purple, linewidth=3.8)
+    scatter!(p1, [x0], dx0_obs; color=cols[2], markersize=15, label="initial condition")
+
+    # trajectory
+    lines!(
+        p2, tsol, xsol_obs; color=:grey30, linewidth=3.3, label="sampled model trajectory"
+    )
+
+    # some settings
+    ylims!(p2, ylim)
+
+    axislegend(p1; position=:rt)
+    axislegend(p2; position=:rt)
+
+    ## Updates/ Animation
+    # updating all observable
+
+    #### Really what happens is that f_itp updates, so that should be an observable, and everything else should be a (series of) lift(s)
+    for i in 1:(length(samples) - 1)
+        for λ in range(0.0, 1.0; length=30)
+            sample = samples[i] * (1 - λ) + samples[i + 1] * λ
+            sample_obs[] = sample
+
+            sleep(0.04)
+        end
+        println("done $i")
+    end
 end
 
-xsol_obs = lift(f -> solveODE(f, x0, tspan, tstep), f_itp_obs)
+### Recording
+# ToDo: make twice as fast
+begin
+    nsecs = length(samples) - 1
+    framerate = 30
+    accel = 2
+    timestamps = range(0, nsecs / accel; step=1 / framerate)
+    timestamps = timestamps[1:(end - 1)]
 
-dxsol_obs = lift((f, x) -> f.(x), f_itp_obs, xsol_obs)
-dx0_obs = lift(f -> [f(x0)], f_itp_obs)
-
-## Initial animated elements state
-lines!(p1, xt_plot, fs_obs; color=:grey30, linewidth=3.1)
-
-# line on model
-lines!(p1, xsol_obs, dxsol_obs; color=:purple, linewidth=3.8)
-scatter!(p1, [x0], dx0_obs; color=:darkred, markersize=15)
-
-# trajectory
-lines!(p2, tsol, xsol_obs; color=:purple)
-
-# some settings
-ylims!(p2, (-1.9, 1.9))
-
-## Updates/ Animation
-# updating all observable
-
-#### Really what happens is that f_itp updates, so that should be an observable, and everything else should be a (series of) lift(s)
-for i in 1:(length(samples) - 1)
-    for λ in range(0.0, 1.0; length=30)
+    record(fig, "time_animation.gif", timestamps; framerate=framerate) do t
+        i = Int(div(t, 1 / accel)) + 1
+        λ = mod(t, 1 / accel) * accel
         sample = samples[i] * (1 - λ) + samples[i + 1] * λ
         sample_obs[] = sample
-
-        sleep(0.04)
     end
-    println("done $i")
 end
