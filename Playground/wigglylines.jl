@@ -1,4 +1,5 @@
 using GLMakie
+using Colors
 using LinearAlgebra
 using DifferentialEquations
 using Interpolations
@@ -9,6 +10,9 @@ baser = [-0.2, 4.0]
 x0 = 3.0
 
 ylim = (1.3, 3.1)
+
+tspan = (0.0, 4.0)
+tstep = 0.1
 
 # generate data
 plot_offset = [-0.5, 0.5]
@@ -55,7 +59,8 @@ function create_itp(xsample, sample)
     sitp = Interpolations.scale(itp, xsample)
     return extrapolate(sitp, Line())
 end
-samples = [exact_sample(fp, xt) for _ in 1:15]
+nparr = 3
+samples = [[exact_sample(fp, xt) for _ in 1:nparr] for _ in 1:15]
 push!(samples, samples[1])
 # now plotting from interpolation objects
 ## second thought, want to create interp object separately
@@ -67,7 +72,10 @@ cols = Makie.Colors.distinguishable_colors(
     4, [Makie.Colors.RGB(1, 1, 1), Makie.Colors.RGB(0, 0, 0)]; dropseed=true
 )
 
+s_cols = range(colorant"grey30", colorant"grey80"; length=nparr + 1)[1:nparr]
+
 begin
+    ## figure setup
     fig = Figure(; resolution=(1000, 700))
     display(fig)
 
@@ -106,18 +114,12 @@ begin
     )
 
     # wiggly lines:
-    # Model
+    # range
     xt_plot = range((baser .+ s_offset)...; length=60)
-    sample_obs = Observable(samples[1])
-
-    f_itp_obs = lift(s -> create_itp(xt, s), sample_obs)
-    fs_obs = lift(f -> f(xt_plot), f_itp_obs)
-
-    # Solution
-    tspan = (0.0, 4.0)
-    tstep = 0.1
     tsol = range(tspan...; step=tstep)
 
+    ## Assembling observables
+    # helper functions
     function solveODE(f_itp, x0, tspan, tstep)
         ff = (u, p, t) -> f_itp(u)
         prob = ODEProblem(ff, x0, tspan)
@@ -125,13 +127,27 @@ begin
         return sol.u
     end
 
-    xsol_obs = lift(f -> solveODE(f, x0, tspan, tstep), f_itp_obs)
+    sample_obs = Observable(samples[1])
+    # i = 1
+    # function plot_for_sample(samples, i)
+    # sample_obs = lift(s -> s[i], samples_obs)
 
-    dxsol_obs = lift((f, x) -> f.(x), f_itp_obs, xsol_obs)
-    dx0_obs = lift(f -> [f(x0)], f_itp_obs)
+    f_itp_obs = lift(s -> create_itp.(Ref(xt), s), sample_obs)
+    fs_obs = map(f -> map.(f, Ref(xt_plot)), f_itp_obs)
+    fs_obs_r = lift(x -> reduce(hcat, x)', fs_obs)
+    # Solution
+
+    # xsol_obs = lift(f -> solveODE(f, x0, tspan, tstep), f_itp_obs)
+    xsol_obs = lift(f -> solveODE.(f, Ref(x0), Ref(tspan), Ref(tstep)), f_itp_obs)
+    xsol_obs_r = lift(x -> reduce(hcat, x)', xsol_obs)
+
+    ## currently not being plottet
+    # dxsol_obs = lift((f, x) -> f.(x), f_itp_obs, xsol_obs)
+    # dxsol_obs = lift((f, x) -> map.(f,Ref(x)), f_itp_obs, xsol_obs)
+    dx0_obs = lift(f -> map.(f, x0), f_itp_obs)
 
     ## Initial animated elements state
-    lines!(p1, xt_plot, fs_obs; color=:grey30, linewidth=3.1, label="sampled model")
+    series!(p1, xt_plot, fs_obs_r; color=s_cols, linewidth=3.1, label="sampled model")
 
     # plot data here
     scatter!(p1, X, y; color=cols[1], label="data", markersize=13)
@@ -142,30 +158,39 @@ begin
     scatter!(p1, [x0], dx0_obs; color=cols[2], markersize=15, label="initial condition")
 
     # trajectory
-    lines!(
-        p2, tsol, xsol_obs; color=:grey30, linewidth=3.3, label="sampled model trajectory"
+    return series!(
+        p2,
+        collect(tsol),
+        xsol_obs_r;
+        color=s_cols,
+        linewidth=3.3,
+        label="sampled model trajectory",
     )
 
     # some settings
     ylims!(p2, ylim)
-
-    axislegend(p1; position=:rt)
-    axislegend(p2; position=:rt)
-
-    ## Updates/ Animation
-    # updating all observable
-
-    #### Really what happens is that f_itp updates, so that should be an observable, and everything else should be a (series of) lift(s)
-    for i in 1:(length(samples) - 1)
-        for λ in range(0.0, 1.0; length=30)
-            sample = samples[i] * (1 - λ) + samples[i + 1] * λ
-            sample_obs[] = sample
-
-            sleep(0.04)
-        end
-        println("done $i")
-    end
 end
+
+axislegend(p1; position=:rt)
+axislegend(p2; position=:rt)
+
+# plot_for_sample(Ref(samples_obs), 1:nparr)
+
+## Updates/ Animation
+# updating all observable
+
+#### Really what happens is that f_itp updates, so that should be an observable, and everything else should be a (series of) lift(s)
+for i in 1:(length(samples) - 1)
+    for λ in range(0.0, 1.0; length=30)
+        # samples_i = samples[i] * (1 - λ) + samples[i + 1] * λ
+        sample_i = samples[i] .* (1 - λ) .+ samples[i + 1] .* λ
+        sample_obs[] = sample_i
+
+        sleep(0.04)
+    end
+    println("done $i")
+end
+# end
 
 ### Recording
 # ToDo: make twice as fast
