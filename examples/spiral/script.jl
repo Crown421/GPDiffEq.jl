@@ -15,7 +15,7 @@ using Optimization, OptimizationOptimJL
 # First we define an ODE and generate some data points from it. 
 
 u0 = [2.0; 0.0]
-datasize = 6
+datasize = 19
 tspan = (0.0, 3.0)
 datatspan = (0.0, 1.5)
 datatsteps = range(datatspan[1], datatspan[2]; length=datasize)
@@ -33,8 +33,7 @@ ode_data = Array(sol(datatsteps))
 traj = sol(datatsteps);
 
 p = plot(sol)
-scatter!(p, datatsteps, ode_data[1, :]; markersize=4)#, markerstyle = :star)
-scatter!(p, datatsteps, ode_data[2, :]; m=(4, :pentagon), lab="pentagon")#, markerstyle = :star)
+scatter!(p, datatsteps, ode_data'; markersize=4, color=:black, label=["data" ""])
 
 # ## Gradient data
 # For this example we get gradient observations from our trajectory data via finite differences
@@ -44,7 +43,7 @@ scaker = with_lengthscale(SqExponentialKernel(), 1.0)
 moker = IndependentMOKernel(scaker)
 ##ToDo: make ODE data into col_vecs and add number programmatically
 x = MOInput(datatsteps, 2)
-σ_n = 1e-6
+σ_n = 1e-3
 y = ode_data'[:]
 nothing #hide
 
@@ -179,18 +178,21 @@ quiver!(
     legend=:bottomright,
 )
 
-# and incorporate into a GP ode model. Unfortunately, this does not currently fully match the previous implementation. 
+# and incorporate into a GP ode model, which can be solved. Initially, the GP ODE corresponds well with the data, but diverges from the true solution as it starts to extrapolate beyond data. 
 
 gpprob = GPODEProblem(gpff, u0, tspan)
 
 gpsol = solve(gpprob, Tsit5())
+nothing #hide
 
 # #### Phase plot
 plot!(sol; vars=(1, 2), label="ode", linewidth=2, color=:navy)
 plot!(gpsol; vars=(1, 2), label="gp", linewidth=2.5, linestyle=:dashdot, color=:darkgreen)
+scatter!(ode_data[1, :], ode_data[2, :]; markersize=4, color=:black, label="data")
 
-# #### Time Series Plots
+# # #### Time Series Plots
 plot(sol; label=["ode" ""], color=[:skyblue :navy], linewidth=3)
 plot!(
     gpsol; label=["gp" ""], color=[:limegreen :darkgreen], linewidth=2, linestyle=:dashdot
 )
+scatter!(datatsteps, ode_data'; markersize=4, color=:black, label=["data" ""])
