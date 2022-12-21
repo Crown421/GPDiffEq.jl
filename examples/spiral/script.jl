@@ -114,12 +114,16 @@ du_pred_mean = reshape(du_pred_mean, :, 2)
 du = trueODEfunc.(eachcol(ode_data), 0, 0)
 sf = maximum(norm.(du))
 quiver(
-    ode_data[1, :], ode_data[2, :]; quiver=(getindex.(du, 1) / sf, getindex.(du, 2) / sf)
+    ode_data[1, :],
+    ode_data[2, :];
+    quiver=(getindex.(du, 1) / sf, getindex.(du, 2) / sf),
+    label="true",
 )
 quiver!(
     ode_data[1, :],
     ode_data[2, :];
     quiver=(du_pred_mean[:, 1] / sf, du_pred_mean[:, 2] / sf),
+    label="predicted data",
 )
 
 # This leaves us with `u` and `udot` pairs as in the input and output:
@@ -134,13 +138,22 @@ moker = IndependentMOKernel(scaker)
 
 u_mo = MOInput(u, 2)
 σ_n = 1e-6
-y = reduce(vcat, udot.X)
+y = reduce(vcat, udot.X')
 nothing #hide
 
 # and build a posterior GP
 gpfun = GP(moker)
 fin_gpfun = gpfun(u_mo, σ_n)
 post_gpfun = posterior(fin_gpfun, y)
+
+# # Just temporary
+# gpff1 = GPODEFunction(post_gpfun)
+# gp1_pred_mean = gpff1.(u)
+# quiver!(
+#     ode_data[1, :],
+#     ode_data[2, :];
+#     quiver=(getindex.(gp1_pred_mean, 1) / sf, getindex.(gp1_pred_mean, 2) / sf),
+# )
 
 # and optimize
 loss, buildgppost = gp_negloglikelihood(fin_gpfun, u_mo, y)
@@ -159,9 +172,22 @@ optparams = unfl(optp)
 optpost = buildgppost(optparams)
 nothing #hide
 
-# and incorporate into a GP ode model. Unfortunately, this does not currently match the previous implementation. 
+# and a GP ODE function
 
 gpff = GPODEFunction(optpost)
+
+# Plotting the vector field
+ug = range(-2.0, 2.0; length=6)
+ug = vcat.(ug, ug')[:]
+gp_pred_mean = gpff.(ug)
+quiver!(
+    getindex.(ug, 1),
+    getindex.(ug, 2);
+    quiver=(getindex.(gp_pred_mean, 1) / sf, getindex.(gp_pred_mean, 2) / sf),
+    legend="GP model",
+)
+
+# and incorporate into a GP ode model. Unfortunately, this does not currently match the previous implementation. 
 
 gpprob = GPODEProblem(gpff, u0, tspan)
 
