@@ -146,15 +146,6 @@ gpfun = GP(moker)
 fin_gpfun = gpfun(u_mo, σ_n)
 post_gpfun = posterior(fin_gpfun, y)
 
-# # Just temporary
-# gpff1 = GPODEFunction(post_gpfun)
-# gp1_pred_mean = gpff1.(u)
-# quiver!(
-#     ode_data[1, :],
-#     ode_data[2, :];
-#     quiver=(getindex.(gp1_pred_mean, 1) / sf, getindex.(gp1_pred_mean, 2) / sf),
-# )
-
 # and optimize
 loss, buildgppost = gp_negloglikelihood(fin_gpfun, u_mo, y)
 
@@ -184,7 +175,8 @@ quiver!(
     getindex.(ug, 1),
     getindex.(ug, 2);
     quiver=(getindex.(gp_pred_mean, 1) / sf, getindex.(gp_pred_mean, 2) / sf),
-    legend="GP model",
+    label="GP model",
+    legend=:bottomright,
 )
 
 # and incorporate into a GP ode model. Unfortunately, this does not currently match the previous implementation. 
