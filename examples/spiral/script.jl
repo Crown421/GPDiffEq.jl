@@ -15,7 +15,7 @@ using Optimization, OptimizationOptimJL
 # First we define an ODE and generate some data points from it. 
 
 u0 = [2.0; 0.0]
-datasize = 10
+datasize = 6
 tspan = (0.0, 3.0)
 datatspan = (0.0, 1.5)
 datatsteps = range(datatspan[1], datatspan[2]; length=datasize)
@@ -179,10 +179,18 @@ quiver!(
     legend=:bottomright,
 )
 
-# and incorporate into a GP ode model. Unfortunately, this does not currently match the previous implementation. 
+# and incorporate into a GP ode model. Unfortunately, this does not currently fully match the previous implementation. 
 
 gpprob = GPODEProblem(gpff, u0, tspan)
 
 gpsol = solve(gpprob, Tsit5())
 
-plot(gpsol)
+# #### Phase plot
+plot!(sol; vars=(1, 2), label="ode", linewidth=2, color=:navy)
+plot!(gpsol; vars=(1, 2), label="gp", linewidth=2.5, linestyle=:dashdot, color=:darkgreen)
+
+# #### Time Series Plots
+plot(sol; label=["ode" ""], color=[:skyblue :navy], linewidth=3)
+plot!(
+    gpsol; label=["gp" ""], color=[:limegreen :darkgreen], linewidth=2, linestyle=:dashdot
+)
