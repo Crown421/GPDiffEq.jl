@@ -86,7 +86,7 @@ pred_mean = reshape(pred_mean, :, 2)
 ## pred_cov = diag(cov(optpost, t_plot_mo))
 ## pred_cov = reshape(pred_cov, :, 2)
 ## plot!(t_plot, pred_mean; ribbons = pred_cov)
-plot(sol(t_plot); label=["ode" ""], color=[:skyblue :navy], linewidth=3.5)
+plot(sol; label=["ode" ""], color=[:skyblue :navy], linewidth=3.5)
 plot!(
     t_plot,
     pred_mean;
