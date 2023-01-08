@@ -15,6 +15,8 @@ using LinearAlgebra
 using KernelFunctions
 using Zygote
 
+using Interpolations
+
 export build_deriv_model
 export GPODE
 export gp_train
@@ -26,6 +28,7 @@ include("solver/PullSolversModule.jl")
 include("utils.jl")
 include("gp_de.jl")
 include("train.jl")
+include("sampling.jl")
 include("derivativeGPs/derivkernels.jl")
 include("derivativeGPs/derivgp.jl")
 include("derivativeGPs/derivposterior.jl")
