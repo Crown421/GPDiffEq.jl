@@ -57,6 +57,12 @@ begin
     av = zeros(nsteps + 1)
     xe[1] = x0
 
+    for i in 1:nsteps
+        GPDiffEq.PullSoversModule.linearized_eulerstep!(
+            fp, dfp, xe, av, tstep, i; lhist=150
+        )
+    end
+
     # plot setup
     fig = Figure(; resolution=(1000, 700))
     display(fig)
@@ -65,7 +71,7 @@ begin
     p2 = Axis(p[1, 2]; xlabel="t", ylabel="x", title="Trajectories")
 
     # plot overall GP
-    lines!(p1, ts, mea; color=cols[4], label="GP", linewidth=3)
+    lines!(p1, ts, mea; color=cols[4], label="GP", linewidth=3.4)
     band!(p1, ts, mea .- st, mea .+ st; color=(cols[4], 0.4))
 
     # plot initial value
@@ -80,63 +86,84 @@ begin
     xlims!(p2, (-0.1, (maxsteps + 1) * tstep))
     ylims!(p2, (1.3, 3.05))
 
-    for i in 1:maxsteps
-        # i = 2
-        GPDiffEq.PullSoversModule.linearized_eulerstep!(
-            fp, dfp, xe, av, tstep, i; lhist=150
-        )
+    m = getfield.(xe, :val)
+    s = getfield.(xe, :err)
+    vb = sqrt.(var(fp, m))
+    meat = mean(fp, m)
 
-        a = av[end]
-        m = xe[i].val
-        s = xe[i].err
-        mn = xe[i + 1].val
-        sn = xe[i + 1].err
+    # begin
+    i_obs = Observable(1)
 
-        vb = sqrt(var(fp, [m])[1])
+    poly1 = lift(
+        i -> vcat(
+            Point2.(m[1:i], meat[1:i] .+ vb[1:i]),
+            reverse(Point2.(m[1:i], meat[1:i] .- vb[1:i])),
+        ),
+        i_obs,
+    )
+    poly!(p1, poly1; color=(cols[3], 0.4))
 
-        meat = mean(fp, [m, mn])
+    m_meat_obs = lift(i -> Point2.(m[1:i], meat[1:i]), i_obs)
+    lines!(p1, m_meat_obs; color=cols[3], linestyle=:dash, linewidth=4)
 
-        band!(p1, [m, mn], meat .- vb, meat .+ vb; color=(cols[3], 0.4))
-        lines!(p1, [m, mn], meat; color=cols[3], linestyle=:dash, linewidth=3)
+    # xlims!(
+    #     p1,
+    #     (
+    #         minimum(getfield.(xe[1:(i + 1)], :val)),
+    #         maximum(getfield.(xe[1:(i + 1)], :val)),
+    #     ) .* (0.98, 1.02),
+    # )
+    # ylims later
 
-        # xlims!(
-        #     p1,
-        #     (
-        #         minimum(getfield.(xe[1:(i + 1)], :val)),
-        #         maximum(getfield.(xe[1:(i + 1)], :val)),
-        #     ) .* (0.98, 1.02),
-        # )
-        # ylims later
+    scatter!(p1, m_meat_obs; color=cols[2], markersize=10)
 
-        scatter!(p1, [mn], [meat[2]]; color=cols[2], markersize=10)
+    t_m_obs = lift(i -> Point2.(tstepsf(i), m[1:i]), i_obs)
+    lines!(p2, t_m_obs; color=cols[4], linewidth=3)
 
-        ofc = 0.00
-        lines!(
-            p2,
-            [(i - 1) * tstep + ofc, i * tstep],
-            [m, mn];
-            color=cols[4],
-            linewidth=3,
-            depth_shift=1.0f0,
-        )
-        band!(
-            p2,
-            [(i - 1) * tstep + ofc, i * tstep],
-            [m - s, mn - sn],
-            [m + s, mn + sn];
-            color=(cols[4], 0.4),
-            depth_shift=0.1f0,
-        )
+    poly2 = lift(
+        i -> vcat(
+            Point2.(tstepsf(i), m[1:i] .+ s[1:i]),
+            reverse(Point2.(tstepsf(i), m[1:i] .- s[1:i])),
+        ),
+        i_obs,
+    )
+    poly!(p2, poly2; color=(cols[4], 0.4))
 
-        scatter!(p2, [i * tstep], [mn]; color=cols[2], markersize=10, depth_shift=0.0f0)
-        lines!(
-            p2, [i * tstep, i * tstep], [mn - sn, mn + sn]; color=cols[2], depth_shift=0.0f0
-        )
+    t_m_err_obs = lift(i -> Point3.(tstepsf(i), m[1:i] - s[1:i], m[1:i] + s[1:i]), i_obs)
+    rangebars!(p2, t_m_err_obs; color=cols[2], whiskerwidth=6)
+    scatter!(p2, t_m_obs; color=cols[2], markersize=10)
 
+    for i in 2:maxsteps
+        i_obs[] = i
         sleep(0.2)
     end
 end
 
-# need to plot approx "tube" (with std)
+# ## error plots
+# nrpoints = 20
+# nrsubsamples = 8
 
-# plot an error bar for x1
+# xs = xe[1:nrpoints]
+# ms = getfield.(xs, :val)
+# r = collect.(range.(ms[1:(end - 1)], ms[2:end], length=nrsubsamples))
+# deleteat!.(r, nrsubsamples)
+
+# # GP mean error
+# as = av[1:nrpoints]
+# meas = meat[1:nrpoints]
+# fr = [(r[i] .- ms[i]) * as[i] .+ meas[i] for i in 1:(nrpoints - 1)]
+
+# series(collect(zip(r, fr)); solid_color=:black)
+# gpy = mean(fp, reduce(vcat, r))
+# lines!(reduce(vcat, r), gpy; color=:red, linewidth=3)
+
+# err = abs.(gpy .- reduce(vcat, fr))
+# lines(reduce(vcat, r), err; color=:red, linewidth=3)
+
+# # GP Var error
+# linstd = reduce(vcat, [vb[i] * ones(nrsubsamples - 1) for i in 1:(nrpoints - 1)])
+# exstd = sqrt.(var(fp, reduce(vcat, r)))
+
+# lines(reduce(vcat, r), abs.(exstd .- linstd); color=:red, linewidth=3)
+
+# #
