@@ -23,7 +23,7 @@ export gp_train
 
 include("solver/PullSolversModule.jl")
 
-@reexport using .PullSoversModule
+@reexport using .PullSolversModule
 
 include("utils.jl")
 include("gp_de.jl")

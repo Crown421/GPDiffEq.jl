@@ -1,4 +1,4 @@
-module PullSoversModule
+module PullSolversModule
 
 using DocStringExtensions
 using Reexport

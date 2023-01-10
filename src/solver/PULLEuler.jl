@@ -43,7 +43,7 @@ function linearized_eulerstep!(gp, dgp, x, a, h, n; lhist=150)
     # ToDo: fix / add sugar for abstract vector requirement of mean when only using scalar
     a[n] = _mean(dgp, x[n].val) # this needs the derivative
 
-    m = x[n].val + h * mean(gp, [x[n].val])[1]
+    m = x[n].val + h * _mean(gp, x[n].val)
 
     ldx = max(1, n - lhist)
     μo = getfield.(x[ldx:n], :val)
