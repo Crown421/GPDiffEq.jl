@@ -78,7 +78,7 @@ begin
 
     stdstep = 0.2
     stdbands = stdstep:stdstep:2.4
-    op_factor = 0.7 / length(stdbands)
+    op_factor = 0.8 / length(stdbands)
     band_color_obs = lift(
         i -> (cols[4], op_factor * opacity_v[nsampl + 1 - i]), opacity_index
     )
@@ -118,7 +118,7 @@ begin
         )
     end
 
-    ylims!(p2, (1.2, 3.0))
+    ylims!(p2, (1.15, 3.05))
 
     # for (i, sample) in enumerate(samples)
     framerate = 5

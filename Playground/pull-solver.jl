@@ -49,7 +49,12 @@ tsol = collect(range(tspan...; step=tstep))
 mea = mean(fp, ts)
 st = sqrt.(var(fp, ts))
 
+fig = Figure(; resolution=(1000, 700))
+display(fig)
+
 begin
+    empty!(fig)
+
     maxsteps = 30
     # setup solver
     nsteps = ceil(Int, (tspan[end] - tspan[1]) / tstep)
@@ -64,21 +69,13 @@ begin
     end
 
     # plot setup
-    fig = Figure(; resolution=(1000, 700))
-    display(fig)
     p = fig[1, 1] = GridLayout()
     p1 = Axis(p[1, 1]; xlabel="x", ylabel="f(x)", title="Gaussian Process ODE")
     p2 = Axis(p[1, 2]; xlabel="t", ylabel="x", title="Trajectories")
 
     # plot overall GP
-    lines!(p1, ts, mea; color=cols[4], label="GP", linewidth=3.4)
-    band!(p1, ts, mea .- st, mea .+ st; color=(cols[4], 0.4))
-
-    # plot initial value
-    scatter!(
-        p1, [x0], mean(fp, [x0]); color=cols[2], markersize=18, label="x_0", marker=:xcross
-    )
-    scatter!(p2, [0], [x0]; color=cols[2], markersize=18, label="x_0", marker=:xcross)
+    lines!(p1, ts, mea; color=cols[4], label="GP mean", linewidth=3.4)
+    band!(p1, ts, mea .- st, mea .+ st; color=(cols[4], 0.4), label="GP σ")
 
     # start steps
     xlims!(p1, (1.05, 3.55))
@@ -93,6 +90,7 @@ begin
 
     # begin
     i_obs = Observable(1)
+    tstepsf(i) = tsol[1:i]
 
     poly1 = lift(
         i -> vcat(
@@ -101,10 +99,17 @@ begin
         ),
         i_obs,
     )
-    poly!(p1, poly1; color=(cols[3], 0.4))
+    poly!(p1, poly1; color=(cols[3], 0.4), label="linear Approx. σ")
 
     m_meat_obs = lift(i -> Point2.(m[1:i], meat[1:i]), i_obs)
-    lines!(p1, m_meat_obs; color=cols[3], linestyle=:dash, linewidth=4)
+    lines!(
+        p1,
+        m_meat_obs;
+        color=cols[3],
+        linestyle=:dash,
+        linewidth=4,
+        label="linear approx. mean",
+    )
 
     # xlims!(
     #     p1,
@@ -115,10 +120,10 @@ begin
     # )
     # ylims later
 
-    scatter!(p1, m_meat_obs; color=cols[2], markersize=10)
+    scatter!(p1, m_meat_obs; color=cols[2], markersize=10, label="solver trajectory")
 
     t_m_obs = lift(i -> Point2.(tstepsf(i), m[1:i]), i_obs)
-    lines!(p2, t_m_obs; color=cols[4], linewidth=3)
+    lines!(p2, t_m_obs; color=cols[4], linewidth=3, label="trajectory mean")
 
     poly2 = lift(
         i -> vcat(
@@ -127,18 +132,52 @@ begin
         ),
         i_obs,
     )
-    poly!(p2, poly2; color=(cols[4], 0.4))
+    poly!(p2, poly2; color=(cols[4], 0.4), label="trajectory σ")
 
     t_m_err_obs = lift(i -> Point3.(tstepsf(i), m[1:i] - s[1:i], m[1:i] + s[1:i]), i_obs)
     rangebars!(p2, t_m_err_obs; color=cols[2], whiskerwidth=6)
-    scatter!(p2, t_m_obs; color=cols[2], markersize=10)
+    scatter!(p2, t_m_obs; color=cols[2], markersize=10, label="solver trajectory")
 
-    for i in 2:maxsteps
+    # plot initial value
+    scatter!(
+        p1, [x0], mean(fp, [x0]); color=cols[2], markersize=18, label="x₀", marker=:xcross
+    )
+    scatter!(p2, [0], [x0]; color=cols[2], markersize=18, label="x₀", marker=:xcross)
+
+    # add legend
+    axislegend(p1)
+    axislegend(p2)
+
+    waittime = 0.2 * ones(maxsteps)
+    waittime[1:6] .= 0.6
+
+    # for i in 2:maxsteps
+    #     i_obs[] = i
+    #     sleep(waittime[i])
+    # end
+    frames = vcat(
+        reduce(vcat, [i * ones(3) for i in 1:5]),
+        reduce(vcat, [i * ones(2) for i in 6:11]),
+        12:maxsteps,
+    )
+    changeidx = unique(i -> frames[i], 1:length(frames))
+    change = fill(false, length(frames))
+    change[changeidx] .= true
+
+    framerate = 5
+    record(fig, "solver_animation.mp4", frames; framerate=framerate) do i
         i_obs[] = i
-        sleep(0.2)
     end
 end
 
+frames = vcat(
+    reduce(vcat, [i * ones(3) for i in 1:5]),
+    reduce(vcat, [i * ones(2) for i in 6:9]),
+    10:maxsteps,
+)
+changeidx = unique(i -> frames[i], 1:length(frames))
+change = fill(false, length(frames))
+change[changeidx] .= true
 # ## error plots
 # nrpoints = 20
 # nrsubsamples = 8
