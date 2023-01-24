@@ -12,3 +12,9 @@ using Random
 include("derivativeGPs/derivkernels.jl")
 include("derivativeGPs/derivgp.jl")
 include("derivativeGPs/derivposterior.jl")
+@testset "Sampling" begin
+    include("sampling.jl")
+end
+@testset "Utils" begin
+    include("utils.jl")
+end

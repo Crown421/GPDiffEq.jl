@@ -38,13 +38,13 @@ scatter!(p, datatsteps, ode_data'; markersize=4, color=:black, label=["data" ""]
 # ## Gradient data
 # For this example we get gradient observations from our trajectory data via finite differences
 
-# First, we set all necessary variables
+# First, we set all necessary variables, which includes the Multi-Output Kernel and the inputs and outputs.
+# See also the [KernelFunctions.jl Documentation on Multiple Outputs](https://juliagaussianprocesses.github.io/KernelFunctions.jl/stable/api/#Inputs-for-Multiple-Outputs).
 scaker = with_lengthscale(SqExponentialKernel(), 1.0)
 moker = IndependentMOKernel(scaker)
-##ToDo: make ODE data into col_vecs and add number programmatically
-x = MOInput(datatsteps, 2)
+
+x, y = prepare_isotopic_multi_output_data(collect(datatsteps), ColVecs(ode_data))
 σ_n = 1e-3
-y = ode_data'[:]
 nothing #hide
 
 # and build a finite GP from them
@@ -108,7 +108,7 @@ plot!(
 
 deriv_post = differentiate(optpost)
 du_pred_mean = mean(deriv_post, x)
-du_pred_mean = reshape(du_pred_mean, :, 2)
+du_pred_mean = reshape_isotopic_multi_output(du_pred_mean, deriv_post)
 
 du = trueODEfunc.(eachcol(ode_data), 0, 0)
 sf = maximum(norm.(du))
@@ -121,13 +121,13 @@ quiver(
 quiver!(
     ode_data[1, :],
     ode_data[2, :];
-    quiver=(du_pred_mean[:, 1] / sf, du_pred_mean[:, 2] / sf),
+    quiver=(getindex.(du_pred_mean, 1) / sf, getindex.(du_pred_mean, 2) / sf),
     label="predicted data",
 )
 
 # This leaves us with `u` and `udot` pairs as in the input and output:
 u = ColVecs(ode_data)
-udot = ColVecs(du_pred_mean')
+udot = du_pred_mean
 
 # ## Building a model
 # Now we build a model for the the ODE. 
@@ -135,9 +135,8 @@ udot = ColVecs(du_pred_mean')
 scaker = with_lengthscale(SqExponentialKernel(), ones(2))
 moker = IndependentMOKernel(scaker)
 
-u_mo = MOInput(u, 2)
+u_mo, y = prepare_isotopic_multi_output_data(u, udot)
 σ_n = 1e-6
-y = reduce(vcat, udot.X')
 nothing #hide
 
 # and build a posterior GP
