@@ -53,15 +53,8 @@ end
 
 function sample_points(gp::AbstractGPs.AbstractGP, xsample::AbstractVector{<:AbstractRange})
     x = collect.(Iterators.product(xsample...))[:]
-    x_mo = _makeMOInput(x, gp.data.x)
+    x_mo = PullSolversModule._makeMOInput(x, gp.data.x)
     return sample_points(gp, x_mo)
-end
-
-function _makeMOInput(x, xMO::KernelFunctions.MOInputIsotopicByFeatures)
-    return KernelFunctions.MOInputIsotopicByFeatures(x, xMO.out_dim)
-end
-function _makeMOInput(x, xMO::KernelFunctions.MOInputIsotopicByOutputs)
-    return KernelFunctions.MOInputIsotopicByOutputs(x, xMO.out_dim)
 end
 
 # for MOInput, probably dispatch on AbstractVector{<:Tuple}?
