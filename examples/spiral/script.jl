@@ -189,7 +189,7 @@ plot!(sol; vars=(1, 2), label="ode", linewidth=2, color=:navy)
 plot!(gpsol; vars=(1, 2), label="gp", linewidth=2.5, linestyle=:dashdot, color=:darkgreen)
 scatter!(ode_data[1, :], ode_data[2, :]; markersize=4, color=:black, label="data")
 
-# # #### Time Series Plots
+# #### Time Series Plots
 plot(sol; label=["ode" ""], color=[:skyblue :navy], linewidth=3)
 plot!(
     gpsol; label=["gp" ""], color=[:limegreen :darkgreen], linewidth=2, linestyle=:dashdot
