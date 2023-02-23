@@ -27,6 +27,16 @@ function _cov(gp, x::AbstractVector{<:AbstractVector{<:Real}})
     return cov(gp, xMO)
 end
 
+function _cov(
+    gp,
+    x::AbstractVector{<:AbstractVector{<:Real}},
+    y::AbstractVector{<:AbstractVector{<:Real}},
+)
+    xMO = _makeMOInput(x, gp.data.x)
+    yMO = _makeMOInput(y, gp.data.x)
+    return cov(gp, xMO, yMO)
+end
+
 # this should probably not be special case, but need to think about it more:
 # function _mean(gp::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector{<:Real})
 #     xMO = _makeMOInput([x], gp.data.x)
@@ -39,4 +49,9 @@ function _makeMOInput(x, xMO::KernelFunctions.MOInputIsotopicByFeatures)
 end
 function _makeMOInput(x, xMO::KernelFunctions.MOInputIsotopicByOutputs)
     return KernelFunctions.MOInputIsotopicByOutputs(x, xMO.out_dim)
+end
+
+# speculative
+function _makeMOInput(x, xMO)
+    return x
 end

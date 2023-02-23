@@ -538,7 +538,7 @@ uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
 version = "3.3.8+0"
 
 [[deps.GPDiffEq]]
-deps = ["AbstractGPs", "ApproximateGPs", "DiffEqBase", "DocStringExtensions", "FiniteDiff", "Flux", "InducingPoints", "Interpolations", "KernelFunctions", "LinearAlgebra", "Measurements", "Optimization", "OptimizationOptimJL", "OrdinaryDiffEq", "Reexport", "Requires", "SciMLBase", "Statistics", "StatsBase", "Zygote"]
+deps = ["AbstractGPs", "ApproximateGPs", "DiffEqBase", "Distributions", "DocStringExtensions", "FiniteDiff", "Flux", "InducingPoints", "Interpolations", "KernelFunctions", "LinearAlgebra", "Measurements", "Optimization", "OptimizationOptimJL", "OrdinaryDiffEq", "Reexport", "Requires", "SciMLBase", "Statistics", "StatsBase", "Zygote"]
 path = "../.."
 uuid = "4de859cf-bf9a-4c94-a796-5dda04c77145"
 version = "0.1.0"

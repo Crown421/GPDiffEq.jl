@@ -6,8 +6,9 @@ using Reexport
 @reexport using SciMLBase
 @reexport using Measurements
 
-using LinearAlgebra
 using AbstractGPs
+using LinearAlgebra
+using Distributions
 import SciMLBase: AbstractODEAlgorithm
 # using OrdinaryDiffEq
 # import OrdinaryDiffEq:
