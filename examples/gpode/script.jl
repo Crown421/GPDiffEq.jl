@@ -10,6 +10,9 @@
 using GPDiffEq
 using Plots
 using LinearAlgebra
+#
+using DifferentialEquations
+using StatsPlots
 # ### Defining a simple GP
 # In this example we sample the vector field values directly instead of learning them from a trajectory. 
 
@@ -88,6 +91,7 @@ fp = posterior(fx, yMO)
 # ### A GPODE problem
 
 # We define a `GPODEProblem` with the GP as the vector field.
+h = 0.002
 u0 = [2.0; 0.0]
 tspan = (0.0, 4.0)
 gpff = GPODEFunction(fp)
@@ -99,12 +103,15 @@ ug = vcat.(ug, ug')[:]
 gp_pred_mean = gpff.(ug)
 sf = maximum(norm.(gp_pred_mean))
 dug = fun.(ug)
-quiver(
+p = plot(; size=(800, 800))
+quiver!(
+    p,
     getindex.(ug, 1),
     getindex.(ug, 2);
     quiver=(getindex.(dug, 1) / sf, getindex.(dug, 2) / sf),
 )
 quiver!(
+    p,
     getindex.(ug, 1),
     getindex.(ug, 2);
     quiver=(getindex.(gp_pred_mean, 1) / sf, getindex.(gp_pred_mean, 2) / sf),
@@ -114,18 +121,125 @@ quiver!(
 prob = GPODEProblem(gpff, u0, tspan)
 
 # standard Euler
-sol = solve(prob, Euler(); dt=0.05)
+det_gpsol = solve(prob, Euler(); dt=h)
 
 # and integrate with the PULL Euler solver. 
-sol = solve(prob, PULLEuler(); dt=0.05)
+gpsol = solve(prob, PULLEuler(500); dt=h)
+detprob = ODEProblem((u, p, t) -> fun(u), u0, tspan)
+detsol = solve(detprob, Tsit5())
+# Euler(); dt=h)
 
+μ_res = getfield.(gpsol.u, :μ)
+ell_intervall = 30
+begin
+    p2 = deepcopy(p)
+    plot!(
+        p2,
+        getindex.(μ_res, 1),
+        getindex.(μ_res, 2);
+        linewidth=2.5,
+        label="PULL Euler",
+        color=:goldenrod4,
+    )
+    plot!(p2, det_gpsol; idxs=(1, 2), linewidth=2.5, label="GP Mean", linestyle=:dash)
+
+    for i in 1:ell_intervall:length(gpsol.u)
+        mv = gpsol[i]
+        covellipse!(p2, mv.μ, 2 * mv.Σ; label="", color=:goldenrod4)
+    end
+
+    # p2 = p and them make easier to regenerate
+    plot!(
+        p2,
+        detsol;
+        idxs=(1, 2),
+        linewidth=2.3,
+        color=:black,
+        label="true ODE",
+        linestyle=:dashdot,
+    )
+end
+
+f2sampl = sample_function(fp, [xrange, xrange])
+
+begin
+    smpl_range = range(-2.0, 2.0; length=10)
+    f2sampl = sample_function(fp, [smpl_range, smpl_range])
+
+    p3 = deepcopy(p2)
+    sampl_dug = f2sampl.(ug)
+    quiver!(
+        p3,
+        getindex.(ug, 1),
+        getindex.(ug, 2);
+        quiver=(getindex.(sampl_dug, 1) / sf, getindex.(sampl_dug, 2) / sf),
+    )
+    smpl_prob = ODEProblem((u, p, t) -> f2sampl(u), u0, tspan)
+    smpl_sol = solve(smpl_prob, Euler(); dt=h)
+    # println(maximum(smpl_sol.t))
+
+    plot!(p3, smpl_sol; idxs=(1, 2), linewidth=2.5, label="sampled ODE")
+
+    p3
+end
+
+## Lets do some more sampling
+function samplet()
+    f2sampl = sample_function(fp, [smpl_range, smpl_range])
+    smpl_prob = ODEProblem((u, p, t) -> f2sampl(u), u0, tspan)
+    smpl_sol = solve(smpl_prob, Euler(); dt=h)
+    return smpl_sol
+end
+
+@time samples = [samplet().u for _ in 1:10000];
+sm = [mean(getindex.(samples, i)) for i in 1:length(samples[1])]
+sv = [cov(getindex.(samples, i)) for i in 1:length(samples[1])]
+
+begin
+    p4 = deepcopy(p2)
+    plot!(
+        p4,
+        getindex.(sm, 1),
+        getindex.(sm, 2);
+        linewidth=2.2,
+        label="sampled mean",
+        color=:cyan3,
+    )
+
+    for i in 1:ell_intervall:length(samples[1])
+        covellipse!(p4, sm[i], 2 * sv[i]; label="", color=:cyan3)
+    end
+    p4
+end
+#
+p5 = plot(; layout=(2, 1), size=(800, 800))
+svars = diag.(sv)
+gpvars = diag.(getfield.(gpsol.u, :Σ))
+
+plot!(p5, getindex.(svars, 1); label="sampled var", subplot=1)
+plot!(p5, getindex.(gpvars, 1); label="GP var", subplot=1)
+plot!(p5, getindex.(svars, 2); label="sampled var", subplot=2)
+plot!(p5, getindex.(gpvars, 2); label="GP var", subplot=2)
+# it is fricking working. 
+# Next steps: 
+# 1. Add line of "real" solution of "true" ODE (also for 1D example)
+# 2. Make an ellipse plotting function
+# 3. Call it a bunch of times for each point
+
+#
+#
+#
+#
+#
+###### Manual stuff for testing
+### mean steps? because weirdly large stes?
 h = 0.05
 nsteps2 = ceil(Int, (prob.tspan[end] - prob.tspan[1]) / h)
 xtest2 = [zeros(2) for _ in 1:(nsteps2 + 1)]
 xtest2[1] = prob.u0
 for i in 1:nsteps2
-    xtest2[i + 1] = xtest2[i] + h * GPDiffEq.PullSolversModule._mean(gp, xtest2[i])
-    # xtest2[i + 1] = xtest2[i] + h * gpff(xtest2[i])
+    # xtest2[i + 1] = xtest2[i] + h * GPDiffEq.PullSolversModule._mean(fp, xtest2[i])
+    xtest2[i + 1] = xtest2[i] + h * gpff(xtest2[i])
 end
 
 # very odd, results are different, need to investigate gpff should be the same as _mean???

@@ -79,8 +79,8 @@ function linearized_eulerstep!(gp, dgp, x, a, h, n; lhist=150)
     # ToDo: move up, use ahe to determine ldx automatically
     ahr = reduce(hcat, ahe; init=0.5 * I)
 
-    println(Kr)
-    println(ahr)
+    # println(Kr)
+    # println(ahr)
 
     cv1 = ahr * Kr
     # really wonder if this is correct, and if so, if I can just make it better with A + A'?
