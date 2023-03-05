@@ -62,7 +62,7 @@ end
 # display(fig)
 
 begin
-    fig = Figure(; resolution=(1000, 700))
+    fig = Figure(; resolution=(1200, 700))
     display(fig)
     p = fig[1, 1] = GridLayout()
     p1 = Axis(p[1, 1]; xlabel="x", ylabel="f(x)", title="Gaussian Process ODE")
@@ -120,9 +120,10 @@ begin
 
     ylims!(p2, (1.15, 3.05))
 
-    # for (i, sample) in enumerate(samples)
-    framerate = 5
-    record(fig, "fading_animation.mp4", 1:length(samples); framerate=framerate) do i
+    # for (i, sample) in enumerate(samples[1:3])
+    for (i, sample) in enumerate(samples)
+        # framerate = 5
+        # record(fig, "fading_animation.mp4", 1:length(samples); framerate=framerate) do i
         sample = samples[i]
         y = reduce(hcat, map(f -> f.(ts), sample))
         series!(p1, ts, y'; solid_color=sampl_color_obs, linewidth=1.5)

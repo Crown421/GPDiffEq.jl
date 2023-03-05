@@ -49,7 +49,7 @@ tsol = collect(range(tspan...; step=tstep))
 mea = mean(fp, ts)
 st = sqrt.(var(fp, ts))
 
-fig = Figure(; resolution=(1000, 700))
+fig = Figure(; resolution=(1200, 700))
 display(fig)
 
 begin
@@ -123,15 +123,17 @@ begin
     scatter!(p1, m_meat_obs; color=cols[2], markersize=10, label="solver trajectory")
 
     t_m_obs = lift(i -> Point2.(tstepsf(i), m[1:i]), i_obs)
-    lines!(p2, t_m_obs; color=cols[4], linewidth=3, label="trajectory mean")
+    # lines!(p2, t_m_obs; color=cols[4], linewidth=3, label="trajectory mean")
+    lines!(p2, tsol, m; color=cols[4], linewidth=3, label="trajectory mean")
 
-    poly2 = lift(
-        i -> vcat(
-            Point2.(tstepsf(i), m[1:i] .+ s[1:i]),
-            reverse(Point2.(tstepsf(i), m[1:i] .- s[1:i])),
-        ),
-        i_obs,
-    )
+    # poly2 = lift(
+    #     i -> vcat(
+    #         Point2.(tstepsf(i), m[1:i] .+ s[1:i]),
+    #         reverse(Point2.(tstepsf(i), m[1:i] .- s[1:i])),
+    #     ),
+    #     i_obs,
+    # )
+    poly2 = vcat(Point2.(tsol, m .+ s), reverse(Point2.(tsol, m .- s)))
     poly!(p2, poly2; color=(cols[4], 0.4), label="trajectory σ")
 
     t_m_err_obs = lift(i -> Point3.(tstepsf(i), m[1:i] - s[1:i], m[1:i] + s[1:i]), i_obs)
@@ -167,17 +169,18 @@ begin
     framerate = 5
     record(fig, "solver_animation.mp4", frames; framerate=framerate) do i
         i_obs[] = i
+        sleep(0.1)
     end
 end
 
-frames = vcat(
-    reduce(vcat, [i * ones(3) for i in 1:5]),
-    reduce(vcat, [i * ones(2) for i in 6:9]),
-    10:maxsteps,
-)
-changeidx = unique(i -> frames[i], 1:length(frames))
-change = fill(false, length(frames))
-change[changeidx] .= true
+# frames = vcat(
+#     reduce(vcat, [i * ones(3) for i in 1:5]),
+#     reduce(vcat, [i * ones(2) for i in 6:9]),
+#     10:maxsteps,
+# )
+# changeidx = unique(i -> frames[i], 1:length(frames))
+# change = fill(false, length(frames))
+# change[changeidx] .= true
 # ## error plots
 # nrpoints = 20
 # nrsubsamples = 8
