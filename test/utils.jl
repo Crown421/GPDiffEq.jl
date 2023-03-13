@@ -2,6 +2,9 @@ using GPDiffEq
 using KernelFunctions
 using LinearAlgebra
 using Test
+using Random
+
+Random.seed!(1234)
 
 ## reshaping output data
 # setup
