@@ -37,14 +37,6 @@ end
 # to cover SISO case for `reshape_isotopic_multi_output`
 _reshape_imo(x, y) = y
 
-# the challenge lies in the may possible options: 
-# need to write them down, not just code into the void. 
-# Want to feed ranges
-# Then generate points (which needs a vector for 1D, and MOInputs for >1D)
-# Some splatting, via collect(Iterators.product). 
-# Really only two cases, but should write down what each step in each case needs, and more critically, write a test script!
-
-# ToDo: TESTS!
 # not sure about returning the collected points, but tbd
 function sample_points(gp::AbstractGPs.AbstractGP, xsample::AbstractRange)
     x = collect(xsample)
