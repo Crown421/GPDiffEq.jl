@@ -1,12 +1,3 @@
-function GPODEFunction{iip}(gp::AbstractGPs.AbstractGP) where {iip}
-    dgp = differentiate(gp)
-    return GPODEFunction{iip}(gp, dgp)
-end
-# ToDo: something nice for inplace (detection)
-function GPODEFunction(gp::AbstractGPs.AbstractGP)
-    return GPODEFunction{false}(gp)
-end
-
 ########################
 ## Old Implementation
 

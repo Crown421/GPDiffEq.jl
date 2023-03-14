@@ -1,6 +1,4 @@
 # import ApproximateGPs: posterior
-export differentiate
-
 """
     posterior(FiniteGP{<:DerivativeGP}, y::AbstractVector{<:Real})
 The posterior of a derivative GP, conditioned on the data `y` from the output space of the undifferentiated GP. Evaluating this posterior at a point `x` will return the posterior of the derivative at `x`, and therefore not return the original data `y`.

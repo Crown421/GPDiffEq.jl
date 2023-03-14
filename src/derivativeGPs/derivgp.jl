@@ -1,5 +1,3 @@
-export DerivativeGP
-
 """
     DerivativeGP
 
@@ -47,7 +45,7 @@ function _deriv_meanfunction(
     return AbstractGPs.ZeroMean{T}()
 end
 
-function _deriv_meanfunction(mean::AbstractGPs.CustomMean) where {T}
+function _deriv_meanfunction(mean::AbstractGPs.CustomMean)
     # ToDo check for >1D
     df(x) = first(Zygote.gradient(x -> mean.f(x), x))
     return AbstractGPs.CustomMean(df)

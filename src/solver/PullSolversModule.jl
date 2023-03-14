@@ -26,6 +26,8 @@ import SciMLBase: AbstractODEAlgorithm
 #     @cache,
 #     @..
 
+using ..DerivativeGPModule
+
 include("GPDEFunction.jl")
 include("GPDEProblem.jl")
 # Solvers

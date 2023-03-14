@@ -24,18 +24,18 @@ function test_derivative(kernel::Kernel)
 end
 
 @testset "derivative kernel" begin
-    @test GPDiffEq.FirstComponentDerivativeKernel <: Kernel
-    @test GPDiffEq.SecondComponentDerivativeKernel <: Kernel
-    @test GPDiffEq.BothComponentDerivativeKernel <: Kernel
+    @test GPDiffEq.DerivativeGPModule.FirstComponentDerivativeKernel <: Kernel
+    @test GPDiffEq.DerivativeGPModule.SecondComponentDerivativeKernel <: Kernel
+    @test GPDiffEq.DerivativeGPModule.BothComponentDerivativeKernel <: Kernel
 
     bker = GaussianKernel()
 
     dkc = DerivativeKernelCollection(bker)
 
     ### Type checks
-    @test dkc.d10 isa GPDiffEq.FirstComponentDerivativeKernel
-    @test dkc.d01 isa GPDiffEq.SecondComponentDerivativeKernel
-    @test dkc.d11 isa GPDiffEq.BothComponentDerivativeKernel
+    @test dkc.d10 isa GPDiffEq.DerivativeGPModule.FirstComponentDerivativeKernel
+    @test dkc.d01 isa GPDiffEq.DerivativeGPModule.SecondComponentDerivativeKernel
+    @test dkc.d11 isa GPDiffEq.DerivativeGPModule.BothComponentDerivativeKernel
 
     @test dkc.d10(1.0, 1.1) isa Real
     @test dkc.d01(1.0, 1.1) isa Real

@@ -26,6 +26,16 @@ struct GPODEFunction{iip,GP,DGP} <: AbstractGPODEFunction{iip}
     end
 end
 
+function GPODEFunction{iip}(gp::AbstractGPs.AbstractGP) where {iip}
+    dgp = differentiate(gp)
+    return GPODEFunction{iip}(gp, dgp)
+end
+
+# ToDo: something nice for inplace (detection)
+function GPODEFunction(gp::AbstractGPs.AbstractGP)
+    return GPODEFunction{false}(gp)
+end
+
 ## ToDo: paramters at some point
 # (gpf::GPODEFunction)(x, p, t) = _mean(gpf.gp, x)
 (gpf::GPODEFunction)(x) = _mean(gpf.gp, x)

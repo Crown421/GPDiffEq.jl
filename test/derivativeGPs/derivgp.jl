@@ -12,7 +12,7 @@
         x′ = collect(range(-1.0, 1.0; length=N′))
 
         @test mean(f, x) == AbstractGPs._map_meanfunction(m, x)
-        dk = GPDiffEq.BothComponentDerivativeKernel(k)
+        dk = GPDiffEq.DerivativeGPModule.BothComponentDerivativeKernel(k)
         @test cov(f, x) == kernelmatrix(dk, x)
         AbstractGPs.TestUtils.test_internal_abstractgps_interface(rng, f, x, x′)
     end

@@ -1,6 +1,4 @@
 # ToDo: nicer implementation
-export DerivativeKernelCollection
-
 abstract type AbstractDerivativeKernel <: Kernel end
 
 # ToDo: finite differencing for Matern kernels, and in particular transformed matern kernels

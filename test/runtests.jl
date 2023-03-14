@@ -9,9 +9,14 @@ using KernelFunctions
 
 using Random
 
-include("derivativeGPs/derivkernels.jl")
-include("derivativeGPs/derivgp.jl")
-include("derivativeGPs/derivposterior.jl")
+@testset "DerivativeGPs" begin
+    include("derivativeGPs/derivkernels.jl")
+    include("derivativeGPs/derivgp.jl")
+    include("derivativeGPs/derivposterior.jl")
+end
+@testset "Solvers" begin
+    include("solver/GPDEFunction.jl")
+end
 @testset "Sampling" begin
     include("sampling.jl")
 end
