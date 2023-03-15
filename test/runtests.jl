@@ -15,7 +15,10 @@ using Random
     include("derivativeGPs/derivposterior.jl")
 end
 @testset "Solvers" begin
-    include("solver/GPDEFunction.jl")
+    include("solver/GPDETypes.jl")
+    @testset "PULLEuler" begin
+        include("solver/PULLEuler.jl")
+    end
 end
 @testset "Sampling" begin
     include("sampling.jl")

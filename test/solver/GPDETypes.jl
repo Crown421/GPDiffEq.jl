@@ -31,6 +31,15 @@ Random.seed!(1234)
     @test fp == ff.gp
     @test dgp == ff.dgp == ff2.dgp
 
+    # test GPDEProblem
+    prob = GPODEProblem(ff, 1.0, (0.0, 1.0))
+
+    @test prob isa SciMLBase.AbstractODEProblem
+    @test prob isa GPDiffEq.PullSolversModule.AbstractGPODEProblem
+
+    @test prob.u0 == 1.0
+    @test prob.tspan == (0.0, 1.0)
+
     # test gpdefun(x)
     @test abs(ff(x[1]) - y[1]) < σ_n * 2
 end

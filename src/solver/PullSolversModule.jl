@@ -10,29 +10,15 @@ using AbstractGPs
 using LinearAlgebra
 using Distributions
 import SciMLBase: AbstractODEAlgorithm
-# using OrdinaryDiffEq
-# import OrdinaryDiffEq:
-#     OrdinaryDiffEqAlgorithm,
-#     OrdinaryDiffEqMutableCache,
-#     OrdinaryDiffEqConstantCache,
-#     alg_order,
-#     alg_cache,
-#     initialize!,
-#     perform_step!,
-#     trivial_limiter!,
-#     constvalue,
-#     @muladd,
-#     @unpack,
-#     @cache,
-#     @..
 
 using ..DerivativeGPModule
 
-include("GPDEFunction.jl")
-include("GPDEProblem.jl")
+export GPODEFunction
+export GPODEProblem
+
+include("GPDETypes.jl")
+
 # Solvers
-## ToDo: Probably don't want OrdinaryDiffEqAlgorithm
-# in fact, need some `Abstract` thing here. 
 abstract type AbstractPULLAlg <: AbstractODEAlgorithm end
 
 include("PULLEuler.jl")

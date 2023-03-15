@@ -28,7 +28,7 @@ include("solver/PullSolversModule.jl")
 @reexport using .DerivativeGPModule
 
 include("utils.jl")
-include("gp_de.jl")
+# include("gp_de.jl")
 include("train.jl")
 include("sampling.jl")
 # include("derivativeGPs/derivkernels.jl")

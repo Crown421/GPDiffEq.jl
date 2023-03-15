@@ -4,6 +4,7 @@
 ## mean
 function _mean(gp::AbstractGPs.PosteriorGP, x::AbstractVector{<:Real})
     xMO = _makeMOInput([x], gp.data.x)
+    # println(xMO)
     return _fix_output(mean(gp, xMO))
 end
 
@@ -53,5 +54,5 @@ end
 
 # speculative
 function _makeMOInput(x, xMO)
-    return x
+    return only.(x)
 end

@@ -60,78 +60,78 @@ end
 
 ### 2D example
 
-@testset "2D" begin
-    x = ColVecs(rand(2, 5))
-    y = ColVecs(rand(2, 5))
-    xMO, yMO = prepare_isotopic_multi_output_data(x, y)
-    mker = IndependentMOKernel(SqExponentialKernel())
+# @testset "2D" begin
+x = ColVecs(rand(2, 5))
+y = ColVecs(rand(2, 5))
+xMO, yMO = prepare_isotopic_multi_output_data(x, y)
+mker = IndependentMOKernel(SqExponentialKernel())
 
-    gp2 = GP(mker)
-    fgp2 = gp2(xMO, 0.001)
-    pgp2 = posterior(fgp2, yMO)
+gp2 = GP(mker)
+fgp2 = gp2(xMO, 0.001)
+pgp2 = posterior(fgp2, yMO)
 
-    # sample
-    xl = [
-        (minimum(getindex.(x, 1)), maximum(getindex.(x, 1))),
-        (minimum(getindex.(x, 2)), maximum(getindex.(x, 2))),
-    ]
-    nsamples = 10
-    xrange2 = [range(xl[i]...; length=nsamples) for i in 1:2]
+# sample
+xl = [
+    (minimum(getindex.(x, 1)), maximum(getindex.(x, 1))),
+    (minimum(getindex.(x, 2)), maximum(getindex.(x, 2))),
+]
+nsamples = 10
+xrange2 = [range(xl[i]...; length=nsamples) for i in 1:2]
 
-    ### check sample points accuracy
-    # single sample for testing
-    s2 = sample_points(pgp2, xrange2)
+### check sample points accuracy
+# single sample for testing
+s2 = sample_points(pgp2, xrange2)
 
-    # mean for accuracy
-    # first the GP mean
-    xr = collect.(Iterators.product(xrange2...))[:]
-    xr_mo = KernelFunctions.MOInputIsotopicByFeatures(xr, pgp2.data.x.out_dim)
-    tmpy = mean(pgp2, xr_mo)
-    testy = reshape_isotopic_multi_output(tmpy, pgp2)
+# mean for accuracy
+# first the GP mean
+xr = collect.(Iterators.product(xrange2...))[:]
+xr_mo = KernelFunctions.MOInputIsotopicByFeatures(xr, pgp2.data.x.out_dim)
+tmpy = mean(pgp2, xr_mo)
+testy = reshape_isotopic_multi_output(tmpy, pgp2)
 
-    # now sample a bunch of sample points, take the mean and compare
-    s2v = [sample_points(pgp2, xrange2) for _ in 1:5000]
-    s2vm = mean(s2v)
+# now sample a bunch of sample points, take the mean and compare
+s2v = [sample_points(pgp2, xrange2) for _ in 1:5000]
+s2vm = mean(s2v)
 
-    @test norm(norm.(s2vm .- s2)) > 0.1
-    @test norm(norm.(s2vm .- testy)) < 0.1
+@test norm(norm.(s2vm .- s2)) > 0.1
+@test norm(norm.(s2vm .- testy)) < 0.1
 
-    ### check sample function accuracy on grid points
-    # underlying function
-    # single function matches the samples points
-    s2itp = GPDiffEq._create_itps(xrange2, s2, BSpline(Quadratic(Line(OnGrid()))), Line())
+### check sample function accuracy on grid points
+# underlying function
+# single function matches the samples points
+s2itp = GPDiffEq._create_itps(xrange2, s2, BSpline(Quadratic(Line(OnGrid()))), Line())
 
-    @test norm(norm.(s2 .- s2itp.(xr))) < 1e-10
+@test norm(norm.(s2 .- s2itp.(xr))) < 1e-10
 
-    # larger sample of functions 
-    f2s = [sample_function(pgp2, xrange2).(xr) for _ in 1:3000]
-    f2sm = mean(f2s)
-    @test norm(norm.(f2sm .- testy)) < 0.1
+# larger sample of functions 
+f2s = [sample_function(pgp2, xrange2).(xr) for _ in 1:3000]
+f2sm = mean(f2s)
+@test norm(norm.(f2sm .- testy)) < 0.1
 
-    # complete pipeline
-    # single sample for testing
+# complete pipeline
+# single sample for testing
 
-    f2 = sample_function(pgp2, xrange2)
+f2 = sample_function(pgp2, xrange2)
 
-    ### check sample function accuracy outside gridpoints
-    # mean for accuracty
+### check sample function accuracy outside gridpoints
+# mean for accuracty
 
-    function transform(x, xl)
-        x = x .* (getindex.(xl, 2) - getindex.(xl, 1)) .+ getindex.(xl, 1)
-        return x
-    end
-    nevals = 14
-    xp = [rand(2) for i in 1:nevals]
-    xp = transform.(xp, Ref(xl))
-
-    xpMO = KernelFunctions.MOInputIsotopicByFeatures(xp, 2)
-    m = mean(pgp2, xpMO)
-    m = reshape_isotopic_multi_output(m, pgp2)
-
-    msv = [sample_function(pgp2, xrange2).(xp) for _ in 1:3000]
-    msvm = mean(msv)
-
-    @test norm(norm.(msvm .- m)) < 0.1
+function transform(x, xl)
+    x = x .* (getindex.(xl, 2) - getindex.(xl, 1)) .+ getindex.(xl, 1)
+    return x
 end
+nevals = 14
+xp = [rand(2) for i in 1:nevals]
+xp = transform.(xp, Ref(xl))
+
+xpMO = KernelFunctions.MOInputIsotopicByFeatures(xp, 2)
+m = mean(pgp2, xpMO)
+m = reshape_isotopic_multi_output(m, pgp2)
+
+msv = [sample_function(pgp2, xrange2).(xp) for _ in 1:3000]
+msvm = mean(msv)
+
+@test norm(norm.(msvm .- m)) < 0.1
+# end
 
 # ToDo: Add test with and without default args
