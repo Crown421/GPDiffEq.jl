@@ -16,52 +16,55 @@ end
 # ToDo: not sure where this comes in
 alg_order(alg::PULLEuler) = 1
 
-# ToDo: Split out subfunction, dispatching scalars vs vector. 
-# For the scalar version, make into 1D vector, call vector version, and then convert MvNormal to normal.
-# Also takes care of the _init issue. 
 function SciMLBase.__solve(prob::AbstractGPODEProblem, alg::PULLEuler; dt, kwargs...)
     gp = prob.f.gp
     dgp = prob.f.dgp
     # dt = kwargs[:dt]
 
-    nsteps = ceil(Int, (prob.tspan[end] - prob.tspan[1]) / dt)
+    nsteps = floor(Int, (prob.tspan[end] - prob.tspan[1]) / dt)
+
+    ts = cumsum(vcat([prob.tspan[1]], dt * ones(nsteps)))
+    finalstepdiff = prob.tspan[end] - ts[end]
+    if finalstepdiff < 0.1 * dt
+        ts[end] = prob.tspan[end]
+    else
+        push!(ts, prob.tspan[end])
+    end
 
     # ToDo: get the type properly from prob uType
-    ts, xe = _pulleulerSolve(prob.u0, nsteps, gp, dgp, prob.tspan, dt, alg)
+    xe = _pulleulerSolve(prob.u0, gp, dgp, ts, alg)
 
     return build_solution(prob, alg, ts, xe; retcode=ReturnCode.Success)
 end
 
-function _pulleulerSolve(
-    u0::AbstractVector{T}, nsteps, gp, dgp, tspan, dt, alg
-) where {T<:Real}
-    xe, av = _init(u0, nsteps)
+function _pulleulerSolve(u0::AbstractVector{T}, gp, dgp, ts, alg) where {T<:Real}
+    xe, av = _init(u0, length(ts))
 
-    for i in 1:nsteps
-        linearized_eulerstep!(gp, dgp, xe, av, dt, i; lhist=alg.buffersize)
+    tsteps = diff(ts)
+    for (i, tstep) in enumerate(tsteps)
+        linearized_eulerstep!(gp, dgp, xe, av, tstep, i; lhist=alg.buffersize)
     end
-    ts = tspan[1]:dt:(dt * nsteps)
 
-    return ts, xe
+    return xe
 end
 
-function _pulleulerSolve(u0::T, nsteps, gp, dgp, tspan, dt, alg) where {T<:Real}
-    ts, xe = _pulleulerSolve([u0], nsteps, gp, dgp, tspan, dt, alg)
+function _pulleulerSolve(u0::T, gp, dgp, ts, alg) where {T<:Real}
+    xe = _pulleulerSolve([u0], gp, dgp, ts, alg)
     xes = Normal.(only.(getfield.(xe, :μ)), sqrt.(only.(getfield.(xe, :Σ))))
-    return ts, xes
+    return xes
 end
 
 # ToDo: move to utils or do better
 function _init(u0::T, nsteps) where {T<:Real}
-    xe = zeros(Measurement{T}, nsteps + 1)
-    av = zeros(T, nsteps + 1)
+    xe = zeros(Measurement{T}, nsteps)
+    av = zeros(T, nsteps)
     xe[1] = u0
     return xe, av
 end
 
 function _init(u0::AbstractVector{T}, nsteps) where {T<:Real}
-    xe = Vector{AbstractGPs.MvNormal{T}}(undef, nsteps + 1)
-    av = [zeros(T, length(u0), length(u0)) for _ in 1:(nsteps + 1)]
+    xe = Vector{AbstractGPs.MvNormal{T}}(undef, nsteps)
+    av = [zeros(T, length(u0), length(u0)) for _ in 1:(nsteps)]
     # Not the most elegant, but should work. 
     xe[1] = AbstractGPs.MvNormal(u0, eps(T) * I)
     return xe, av
@@ -104,8 +107,9 @@ function linearized_eulerstep!(gp, dgp, x, a, h, n; lhist=150)
     # # println(v)
     # println("v: $(det(v))")
     # println("a: $(det(a[n] * h))")
-
-    return x[n + 1] = AbstractGPs.MvNormal(m, v)
+    # ts[n + 1] = ts[n] + h
+    x[n + 1] = AbstractGPs.MvNormal(m, v)
+    return x[n + 1]
     #m .± sqrt.(diag(v))
 end
 
