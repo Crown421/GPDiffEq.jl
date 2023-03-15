@@ -19,6 +19,7 @@ end
     @testset "PULLEuler" begin
         include("solver/PULLEuler.jl")
     end
+    include("solver/utils.jl")
 end
 @testset "Sampling" begin
     include("sampling.jl")
