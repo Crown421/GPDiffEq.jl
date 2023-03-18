@@ -38,7 +38,7 @@ plot!(p, ts, mean(fp, ts); ribbons=sqrt.(var(fp, ts)), label="GP posterior")
 # ### A GPODE problem
 
 # We define a `GPODEProblem` with the GP as the vector field.
-u0 = [1.0]
+u0 = 1.0
 tspan = (0.0, 8.0)
 ff = GPODEFunction(fp)
 
