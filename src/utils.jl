@@ -1,5 +1,4 @@
 export gp_negloglikelihood
-export reshape_isotopic_multi_output
 
 """
     Returns two function function. 1) to compute the loglikelihood and 2) rebuild the GP from a new set of parameters. 
@@ -45,13 +44,3 @@ end
 Flux.@functor IndependentMOKernel
 # import Flux: destructure
 # Flux.destructure()
-
-# Reshape output data
-
-reshape_isotopic_multi_output(y, gp::AbstractGPs.PosteriorGP) = _reshape_imo(gp.data.x, y)
-function _reshape_imo(x::KernelFunctions.MOInputIsotopicByOutputs, y)
-    return ColVecs(permutedims(reshape(y, length(x.x), x.out_dim)))
-end
-function _reshape_imo(x::KernelFunctions.MOInputIsotopicByFeatures, y)
-    return ColVecs(reshape(y, x.out_dim, :))
-end

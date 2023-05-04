@@ -1,5 +1,3 @@
-export DerivativeGP
-
 """
     DerivativeGP
 
@@ -47,16 +45,17 @@ function _deriv_meanfunction(
     return AbstractGPs.ZeroMean{T}()
 end
 
-function _deriv_meanfunction(mean::AbstractGPs.CustomMean) where {T}
+function _deriv_meanfunction(mean::AbstractGPs.CustomMean)
     # ToDo check for >1D
-    df(x) = first(Zygote.gradient(x -> mean.f(x), x))
+    tf = x -> only(only(autodiff(Reverse, mean.f, Active, Active(x))))
+    df = x -> tf.(x)
     return AbstractGPs.CustomMean(df)
 end
 
 ### AbstractGP interface implementation.
 
 function Statistics.mean(f::DerivativeGP, x::AbstractVector)
-    return AbstractGPs._map_meanfunction(f.dmean, x)
+    return AbstractGPs.mean_vector(f.dmean, x)
 end
 
 Statistics.cov(f::DerivativeGP, x::AbstractVector) = kernelmatrix(f.dkernel.d11, x)

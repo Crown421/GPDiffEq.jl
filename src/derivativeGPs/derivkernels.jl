@@ -1,58 +1,172 @@
-# ToDo: nicer implementation
-export DerivativeKernelCollection
-
 abstract type AbstractDerivativeKernel <: Kernel end
 
-# ToDo: finite differencing for Matern kernels, and in particular transformed matern kernels
-# first(FiniteDiff.finite_difference_gradient(t1 -> ker(t1[1], t2), [t1]))
-struct FirstComponentDerivativeKernel{Tdk,Tk<:Kernel} <: AbstractDerivativeKernel
-    dk10::Tdk
+@doc raw"""
+    Derivative10Kernel(kernel)
+Derivative of `kernel` with respect to the first argument:
 
-    function FirstComponentDerivativeKernel(kernel)
-        d10(t1, t2) = first(first(Zygote.gradient(t1 -> kernel(t1, t2), t1)))
-        return new{typeof(d10),typeof(kernel)}(d10)
-    end
+``D^{(1,0)} k(x,y) = \frac{\partial}{\partial x} k(x,y)``
+
+Can be evaluated like a normal kernel.
+"""
+struct Derivative10Kernel{K} <: AbstractDerivativeKernel
+    ker::K
 end
 
-(dk::FirstComponentDerivativeKernel)(t1, t2) = dk.dk10(t1, t2)
-
-struct SecondComponentDerivativeKernel{Tdk,Tk<:Kernel} <: AbstractDerivativeKernel
-    dk01::Tdk
-
-    function SecondComponentDerivativeKernel(kernel)
-        d01(t1, t2) = first(first(Zygote.gradient(t2 -> kernel(t1, t2), t2)))
-        return new{typeof(d01),typeof(kernel)}(d01)
-    end
+function (d::Derivative10Kernel)(
+    x::Union{Real,Tuple{Real,Int}}, y::Union{Real,Tuple{Real,Int}}
+)
+    dx = autodiff(Reverse, d.ker, Active, Active(x), Const(y))
+    return first(first(only(dx)))
+end
+function (d::Derivative10Kernel)(x::AbstractVector, y::AbstractVector)
+    dx = zero(x)
+    autodiff(Reverse, d.ker, Active, Duplicated(x, dx), Const(y))
+    return dx
+end
+function (d::Derivative10Kernel)(
+    (x, px)::Tuple{AbstractVector,Int}, (y, py)::Tuple{AbstractVector,Int}
+)
+    x = collect(x)
+    y = collect(y)
+    dx = zero(x)
+    autodiff(
+        Reverse, (x, y) -> d.ker((x, px), (y, py)), Active, Duplicated(x, dx), Const(y)
+    )
+    return dx
 end
 
-(dk::SecondComponentDerivativeKernel)(t1, t2) = dk.dk01(t1, t2)
+@doc raw"""
+    Derivative01Kernel(kernel)
+Derivative of `kernel` with respect to the second argument:
 
-struct BothComponentDerivativeKernel{Tdk,Tk<:Kernel} <: AbstractDerivativeKernel
-    dk11::Tdk
+``D^{(0,1)} k(x,y) = \frac{\partial}{\partial y} k(x,y)``
 
-    function BothComponentDerivativeKernel(kernel)
-        d11(t1, t2) = first(Zygote.hessian(t -> kernel(t[1], t[2]), [t1, t2])[2])
-        return new{typeof(d11),typeof(kernel)}(d11)
-    end
+Can be evaluated like a normal kernel.
+"""
+struct Derivative01Kernel{K} <: AbstractDerivativeKernel
+    ker::K
 end
 
-(dk::BothComponentDerivativeKernel)(t1, t2) = dk.dk11(t1, t2)
+function (d::Derivative01Kernel)(
+    x::Union{Real,Tuple{Real,Int}}, y::Union{Real,Tuple{Real,Int}}
+)
+    dy = autodiff(Reverse, d.ker, Active, Const(x), Active(y))
+    return first(last(only(dy)))
+end
+function (d::Derivative01Kernel)(x::AbstractVector, y::AbstractVector)
+    dy = zero(y)
+    autodiff(Reverse, d.ker, Active, Const(x), Duplicated(y, dy))
+    return dy
+end
+function (d::Derivative01Kernel)(
+    (x, px)::Tuple{AbstractVector,Int}, (y, py)::Tuple{AbstractVector,Int}
+)
+    x = collect(x)
+    y = collect(y)
+    dy = zero(y)
+    autodiff(
+        Reverse, (x, y) -> d.ker((x, px), (y, py)), Active, Const(x), Duplicated(y, dy)
+    )
+    return dy
+end
 
-struct DerivativeKernelCollection{
-    Tk<:Kernel,
-    Tdk10<:FirstComponentDerivativeKernel{<:Function,Tk},
-    Tdk01<:SecondComponentDerivativeKernel{<:Function,Tk},
-    Tdk11<:BothComponentDerivativeKernel{<:Function,Tk},
-}
-    d10::Tdk10
-    d01::Tdk01
-    d11::Tdk11
+@doc raw"""
+    Derivative11Kernel(kernel)
+Differentiate `kernel` with respect to both arguments. 
+
+``D^{(1,1)} k(x,y) = \frac{\partial^2}{\partial x \partial y} k(x,y)``
+    
+Can be evaluated like a normal kernel.
+"""
+struct Derivative11Kernel{K} <: AbstractDerivativeKernel
+    ker::K
+end
+
+function (d::Derivative11Kernel)(x::Real, y::Real)
+    dxy = autodiff(
+        Forward,
+        (x, y) ->
+            first(only(autodiff_deferred(Reverse, d.ker, Active, Active(x), Const(y)))),
+        DuplicatedNoNeed,
+        Const(x),
+        DuplicatedNoNeed(y, 1.0),
+    )
+    return first(dxy)
+end
+
+function (d::Derivative11Kernel)((x, px)::Tuple{Real,Int}, (y, py)::Tuple{Real,Int})
+    dxy = autodiff(
+        Forward,
+        (x, y) -> first(
+            only(
+                autodiff_deferred(
+                    Reverse,
+                    (x, y) -> d.ker((x, px), (y, py)),
+                    Active,
+                    Active(x),
+                    Const(y),
+                ),
+            ),
+        ),
+        DuplicatedNoNeed,
+        Const(x),
+        DuplicatedNoNeed(y, 1.0),
+    )
+    return first(dxy)
+end
+
+function (d::Derivative11Kernel)(x::AbstractVector, y::AbstractVector)
+    inner = function (x, y)
+        dx = zero(x)
+        autodiff_deferred(Reverse, d.ker, Active, Duplicated(x, dx), Const(y))
+        return dx
+    end
+
+    dxyc = [
+        only(autodiff(Forward, inner, DuplicatedNoNeed, Const(x), Duplicated(y, dy))) for
+        dy in onehot(y)
+    ]
+
+    return reduce(hcat, dxyc)
+end
+
+function (d::Derivative11Kernel)(
+    (x, px)::Tuple{AbstractVector,Int}, (y, py)::Tuple{AbstractVector,Int}
+)
+    x = collect(x)
+    y = collect(y)
+    inner = function (x, y)
+        dx = zero(x)
+        autodiff_deferred(
+            Reverse,
+            (x, y) -> d.ker((x, px), (y, py)),
+            Active,
+            Duplicated(x, dx),
+            Const(y),
+        )
+        return dx
+    end
+    dxyc = [
+        only(autodiff(Forward, inner, DuplicatedNoNeed, Const(x), Duplicated(y, dy))) for
+        dy in onehot(y)
+    ]
+
+    return reduce(hcat, dxyc)
+end
+
+@doc raw"""
+    DerivativeKernelCollection(kernel)
+"""
+struct DerivativeKernelCollection{Tk<:Kernel}
+    d10::Derivative10Kernel{Tk}
+    d01::Derivative01Kernel{Tk}
+    d11::Derivative11Kernel{Tk}
 
     function DerivativeKernelCollection(kernel)
-        d10 = FirstComponentDerivativeKernel(kernel)
-        d01 = SecondComponentDerivativeKernel(kernel)
-        d11 = BothComponentDerivativeKernel(kernel)
-        return new{typeof(kernel),typeof(d10),typeof(d01),typeof(d11)}(d10, d01, d11)
+        d10 = Derivative10Kernel(kernel)
+        d01 = Derivative01Kernel(kernel)
+        d11 = Derivative11Kernel(kernel)
+        return new{typeof(kernel)}(d10, d01, d11)
     end
 end
 

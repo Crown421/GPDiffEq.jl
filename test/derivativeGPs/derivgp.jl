@@ -1,3 +1,5 @@
+using Zygote
+
 @testset "base gp" begin
 
     # Ensure that GP implements the AbstractGP API consistently.
@@ -11,8 +13,8 @@
         x = collect(range(-1.0, 1.0; length=N))
         x′ = collect(range(-1.0, 1.0; length=N′))
 
-        @test mean(f, x) == AbstractGPs._map_meanfunction(m, x)
-        dk = GPDiffEq.BothComponentDerivativeKernel(k)
+        @test mean(f, x) == AbstractGPs.mean_vector(m, x)
+        dk = GPDiffEq.DerivativeGPModule.Derivative11Kernel(k)
         @test cov(f, x) == kernelmatrix(dk, x)
         AbstractGPs.TestUtils.test_internal_abstractgps_interface(rng, f, x, x′)
     end

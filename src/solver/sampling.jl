@@ -10,7 +10,6 @@ export sample_points, sample_function
 
 function sample_points(gp::AbstractGPs.AbstractGP, xsample::AbstractVector)
     m = mean(gp, xsample)
-    # gp.(xsample)
     ζ = randn(length(xsample))
     K = cov(gp, xsample)
 
@@ -37,14 +36,6 @@ end
 # to cover SISO case for `reshape_isotopic_multi_output`
 _reshape_imo(x, y) = y
 
-# the challenge lies in the may possible options: 
-# need to write them down, not just code into the void. 
-# Want to feed ranges
-# Then generate points (which needs a vector for 1D, and MOInputs for >1D)
-# Some splatting, via collect(Iterators.product). 
-# Really only two cases, but should write down what each step in each case needs, and more critically, write a test script!
-
-# ToDo: TESTS!
 # not sure about returning the collected points, but tbd
 function sample_points(gp::AbstractGPs.AbstractGP, xsample::AbstractRange)
     x = collect(xsample)
@@ -62,7 +53,8 @@ function sample_function(
     gp::AbstractGPs.AbstractGP,
     xsample;
     interpolationalg::Interpolations.InterpolationType=BSpline(Quadratic(Line(OnGrid()))),
-    extrapolation=Line(),
+    extrapolation=Inf,
+    # Line(),
 )
     # xsample is a range, need to generate MOInputs from it
     sample = sample_points(gp, xsample)

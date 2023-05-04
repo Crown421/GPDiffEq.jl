@@ -1,5 +1,5 @@
 # Solver API
 
-```@autodocs
+<!-- ```@autodocs
 Modules = [GPDiffEq.PullSolversModule]
-```
+``` -->

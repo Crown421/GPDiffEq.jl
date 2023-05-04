@@ -1,6 +1,4 @@
 # import ApproximateGPs: posterior
-export differentiate
-
 """
     posterior(FiniteGP{<:DerivativeGP}, y::AbstractVector{<:Real})
 The posterior of a derivative GP, conditioned on the data `y` from the output space of the undifferentiated GP. Evaluating this posterior at a point `x` will return the posterior of the derivative at `x`, and therefore not return the original data `y`.
@@ -43,7 +41,7 @@ end
 ### AbstractGP interface implementation.
 # PosteriorGP not exported seems odd. Probably should import explicitly.
 function Statistics.mean(f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector)
-    return mean(f.prior, x) + kernelmatrix(f.prior.dkernel.d10, x, f.data.x) * f.data.α
+    return mean(f.prior, x) .+ kernelmatrix(f.prior.dkernel.d10, x, f.data.x) * f.data.α
 end
 
 function Statistics.cov(f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector)

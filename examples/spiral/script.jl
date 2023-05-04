@@ -4,11 +4,8 @@
 # ## Setup
 
 # Load necessary packages
-using ApproximateGPs
 using Plots
 using LinearAlgebra
-using DifferentialEquations
-using InducingPoints
 using GPDiffEq
 using Optimization, OptimizationOptimJL
 
@@ -36,7 +33,7 @@ p = plot(sol)
 scatter!(p, datatsteps, ode_data'; markersize=4, color=:black, label=["data" ""])
 
 # ## Gradient data
-# For this example we get gradient observations from our trajectory data via finite differences
+# For this example we get gradient observations from our trajectory data by interpolating it with a GP and differentiating it. 
 
 # First, we set all necessary variables, which includes the Multi-Output Kernel and the inputs and outputs.
 # See also the [KernelFunctions.jl Documentation on Multiple Outputs](https://juliagaussianprocesses.github.io/KernelFunctions.jl/stable/api/#Inputs-for-Multiple-Outputs).
@@ -47,7 +44,7 @@ x, y = prepare_isotopic_multi_output_data(collect(datatsteps), ColVecs(ode_data)
 σ_n = 1e-3
 nothing #hide
 
-# and build a finite GP from them
+# We define a finite GP
 g = GP(moker)
 gt = g(x, σ_n)
 gt_post = posterior(gt, y)
@@ -59,8 +56,7 @@ loss, buildgppost = gp_negloglikelihood(gt, x, y)
 
 p0 = log.([1.0])
 unfl(x) = exp.(x)
-
-#optp = gp_train(loss ∘ unfl, p0; show_trace=true, show_every=15)
+nothing #hide
 
 # Optimizing:
 adtype = Optimization.AutoZygote()
@@ -76,16 +72,13 @@ optparams = unfl(optp)
 optpost = buildgppost(optparams)
 nothing #hide
 
-# which fits pretty well
+# which fits the data much better than the initial GP:
 t_plot = range(datatspan...; length=100)
 t_plot_mo = MOInput(t_plot, 2)
 opt_pred_mean = mean(optpost, t_plot_mo)
 opt_pred_mean = reshape(opt_pred_mean, :, 2)
 pred_mean = mean(gt_post, t_plot_mo)
 pred_mean = reshape(pred_mean, :, 2)
-## pred_cov = diag(cov(optpost, t_plot_mo))
-## pred_cov = reshape(pred_cov, :, 2)
-## plot!(t_plot, pred_mean; ribbons = pred_cov)
 plot(sol; label=["ode" ""], color=[:skyblue :navy], linewidth=3.5)
 plot!(
     t_plot,
@@ -103,8 +96,9 @@ plot!(
     linewidth=2.5,
     linestyle=:dash,
 )
+scatter!(datatsteps, ode_data'; markersize=4, color=:black, label=["data" ""])
 
-# GPs are closed under linear operators, which means that we can very easily obtain derivative information:
+# GPs are closed under linear operators, which means that we can very easily obtain derivative information along the trajectory.
 
 deriv_post = differentiate(optpost)
 du_pred_mean = mean(deriv_post, x)
@@ -116,18 +110,19 @@ quiver(
     ode_data[1, :],
     ode_data[2, :];
     quiver=(getindex.(du, 1) / sf, getindex.(du, 2) / sf),
-    label="true",
+    label="true gradients",
 )
 quiver!(
     ode_data[1, :],
     ode_data[2, :];
     quiver=(getindex.(du_pred_mean, 1) / sf, getindex.(du_pred_mean, 2) / sf),
-    label="predicted data",
+    label="predicted gradients",
 )
 
-# This leaves us with `u` and `udot` pairs as in the input and output:
+# This leaves us with `u` and `udot` pairs as in the input and output for the next GP that will define the ODE.
 u = ColVecs(ode_data)
 udot = du_pred_mean
+nothing #hide
 
 # ## Building a model
 # Now we build a model for the the ODE. 
@@ -136,15 +131,15 @@ scaker = with_lengthscale(SqExponentialKernel(), ones(2))
 moker = IndependentMOKernel(scaker)
 
 u_mo, y = prepare_isotopic_multi_output_data(u, udot)
-σ_n = 1e-6
+σ_n = 1e-4
 nothing #hide
 
-# and build a posterior GP
+# compute the posterior GP
 gpfun = GP(moker)
 fin_gpfun = gpfun(u_mo, σ_n)
 post_gpfun = posterior(fin_gpfun, y)
 
-# and optimize
+# and optimize its hyperparameters similar as above:
 loss, buildgppost = gp_negloglikelihood(fin_gpfun, u_mo, y)
 
 p0 = log.(ones(2))
@@ -169,29 +164,54 @@ gpff = GPODEFunction(optpost)
 ug = range(-2.0, 2.0; length=6)
 ug = vcat.(ug, ug')[:]
 gp_pred_mean = gpff.(ug)
+true_mean = trueODEfunc.(ug, 0, 0)
+quiver!(
+    getindex.(ug, 1),
+    getindex.(ug, 2);
+    quiver=(getindex.(true_mean, 1) / sf, getindex.(true_mean, 2) / sf),
+    label="true model",
+    color=:black,
+)
 quiver!(
     getindex.(ug, 1),
     getindex.(ug, 2);
     quiver=(getindex.(gp_pred_mean, 1) / sf, getindex.(gp_pred_mean, 2) / sf),
     label="GP model",
     legend=:bottomright,
+    color=:darkgreen,
 )
 
-# and incorporate into a GP ode model, which can be solved. Initially, the GP ODE corresponds well with the data, but diverges from the true solution as it starts to extrapolate beyond data. 
+# We note that the direction of each gradient corresponds well. However, since the GP mean is zero in the absence of data, in accordance to its prior, the magnitude becomes too small outward from the initial trajectory. 
+# In the center, the GP slightly overestimates the magnitude. 
+
+# We define a GP ODE model, which can be solved. Initially, the GP ODE corresponds well with the data, but diverges from the true solution as it starts to extrapolate beyond data. 
 
 gpprob = GPODEProblem(gpff, u0, tspan)
 
-gpsol = solve(gpprob, Tsit5())
+gpsol = solve(gpprob, PULLEuler(); dt=0.001)
 nothing #hide
 
 # #### Phase plot
-plot!(sol; vars=(1, 2), label="ode", linewidth=2, color=:navy)
-plot!(gpsol; vars=(1, 2), label="gp", linewidth=2.5, linestyle=:dashdot, color=:darkgreen)
+plot!(sol; vars=(1, 2), label="ode", linewidth=2.5, color=:navy)
+plot!(
+    getindex.(mean.(gpsol.u), 1),
+    getindex.(mean.(gpsol.u), 2);
+    label="gp",
+    linewidth=2.7,
+    linestyle=:dashdot,
+    color=:magenta,
+)
 scatter!(ode_data[1, :], ode_data[2, :]; markersize=4, color=:black, label="data")
 
 # #### Time Series Plots
 plot(sol; label=["ode" ""], color=[:skyblue :navy], linewidth=3)
 plot!(
-    gpsol; label=["gp" ""], color=[:limegreen :darkgreen], linewidth=2, linestyle=:dashdot
+    gpsol.t,
+    reduce(hcat, mean.(gpsol.u))';
+    ribbons=sqrt.(reduce(hcat, var.(gpsol.u)))',
+    color=[:limegreen :darkgreen],
+    linewidth=2,
+    linestyle=:dashdot,
+    label=["gp ode" ""],
 )
 scatter!(datatsteps, ode_data'; markersize=4, color=:black, label=["data" ""])

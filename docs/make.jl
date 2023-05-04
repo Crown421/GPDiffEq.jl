@@ -60,7 +60,7 @@ makedocs(;
         "theory.md",
         "symmetries.md",
         "API" => "api.md",
-        "Solver API" => "solverapi.md",
+        # "Solver API" => "solverapi.md",
         "Examples" =>
             map(filter!(filename -> endswith(filename, ".md"), readdir(EXAMPLES_OUT))) do x
                 return joinpath("examples", x)
