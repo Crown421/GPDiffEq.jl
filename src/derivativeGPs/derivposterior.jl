@@ -40,8 +40,10 @@ end
 
 ### AbstractGP interface implementation.
 # PosteriorGP not exported seems odd. Probably should import explicitly.
+_badd(x,y) = x .+ y
 function Statistics.mean(f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector)
-    return mean(f.prior, x) .+ kernelmatrix(f.prior.dkernel.d10, x, f.data.x) * f.data.α
+    # return mean(f.prior, x) .+ kernelmatrix(f.prior.dkernel.d10, x, f.data.x) * f.data.α
+    return _badd.(mean(f.prior, x), kernelmatrix(f.prior.dkernel.d10, x, f.data.x) * f.data.α)
 end
 
 function Statistics.cov(f::AbstractGPs.PosteriorGP{<:DerivativeGP}, x::AbstractVector)

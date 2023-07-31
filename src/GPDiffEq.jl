@@ -8,7 +8,8 @@ using DiffEqBase
 using Flux
 using Optimization
 using OptimizationOptimJL
-using InducingPoints
+# coming soon
+# using InducingPoints
 using Statistics
 using StatsBase
 using LinearAlgebra
