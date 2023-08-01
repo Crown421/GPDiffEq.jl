@@ -5,7 +5,9 @@ using DocStringExtensions
 
 @reexport using ApproximateGPs
 using DiffEqBase
-using Flux
+# using Flux
+import Functors: @functor
+import Optimisers: destructure
 using Optimization
 using OptimizationOptimJL
 # coming soon

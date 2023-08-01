@@ -18,7 +18,7 @@ function gp_negloglikelihood(gp, x, y)
 end
 
 function _gp_negloglikelihood(gp::AbstractGPs.FiniteGP, x, y)
-    _p, kernelrc = Flux.destructure(gp.f.kernel)
+    _p, kernelrc = destructure(gp.f.kernel)
     # ToDo: noise optimization
     σ_n = first(gp.Σy)
     function loglikelihood(params)
@@ -41,6 +41,6 @@ end
 # one for dlc Approx/ VLA
 
 ## Piracy, need to fix in KernelFunctions (Issue)
-Flux.@functor IndependentMOKernel
+@functor IndependentMOKernel
 # import Flux: destructure
 # Flux.destructure()
