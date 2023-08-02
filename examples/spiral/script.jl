@@ -8,6 +8,7 @@ using Plots
 using LinearAlgebra
 using GPDiffEq
 using Optimization, OptimizationOptimJL
+using Zygote
 
 # First we define an ODE and generate some data points from it. 
 
